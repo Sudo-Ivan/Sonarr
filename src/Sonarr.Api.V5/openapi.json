@@ -8714,7 +8714,7 @@
             "type": "array",
             "items": {
               "type": "object",
-              "additionalProperties": { }
+              "additionalProperties": {}
             },
             "nullable": true
           }
@@ -9643,9 +9643,6 @@
           "allowedHosts": {
             "type": "string",
             "nullable": true
-          },
-          "analyticsEnabled": {
-            "type": "boolean"
           },
           "username": {
             "type": "string",
@@ -11579,7 +11576,7 @@
             "nullable": true
           }
         },
-        "additionalProperties": { }
+        "additionalProperties": {}
       },
       "ProfileFormatItemResource": {
         "type": "object",
@@ -13962,7 +13959,7 @@
           },
           "formattedMessageArguments": {
             "type": "array",
-            "items": { },
+            "items": {},
             "nullable": true,
             "deprecated": true
           },
@@ -13994,10 +13991,10 @@
   },
   "security": [
     {
-      "X-Api-Key": [ ]
+      "X-Api-Key": []
     },
     {
-      "apikey": [ ]
+      "apikey": []
     }
   ],
   "tags": [

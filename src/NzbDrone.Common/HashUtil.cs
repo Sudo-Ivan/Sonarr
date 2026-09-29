@@ -27,11 +27,5 @@ namespace NzbDrone.Common
 
             return $"{mCrc:x8}";
         }
-
-        public static string AnonymousToken()
-        {
-            var seed = $"{Environment.ProcessorCount}_{Environment.OSVersion.Platform}_{Environment.MachineName}_{Environment.UserName}";
-            return HashUtil.CalculateCrc(seed);
-        }
     }
 }

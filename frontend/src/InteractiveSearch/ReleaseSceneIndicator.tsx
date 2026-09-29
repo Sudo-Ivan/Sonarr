@@ -195,6 +195,16 @@ function ReleaseSceneIndicator(props: ReleaseSceneIndicatorProps) {
     }
   }
 
+  if (isMultiSeason) {
+    messages.push(
+      <div key="multi-season">{translate('MultiSeasonPackWarning')}</div>
+    );
+
+    if (level === styles.levelNone || level === styles.levelNormal) {
+      level = styles.levelUnknown;
+    }
+  }
+
   const table = (
     <DescriptionList className={styles.descriptionList}>
       {comment !== undefined && (

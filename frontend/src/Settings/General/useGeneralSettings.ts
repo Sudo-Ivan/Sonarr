@@ -20,7 +20,6 @@ export interface GeneralSettingsModel {
   authenticationMethod: string;
   authenticationRequired: string;
   allowedHosts: string;
-  analyticsEnabled: boolean;
   username: string;
   password: string;
   passwordConfirmation: string;

@@ -23,6 +23,14 @@ namespace NzbDrone.Core.DecisionEngine.Specifications
                 return DownloadSpecDecision.Accept();
             }
 
+            // Multi-season packs are only supported for user initiated grabs and downloads
+            // added to the client outside of Sonarr, keep rejecting them for automatic grabs
+            if (subject.ReleaseSource is ReleaseSourceType.Rss or ReleaseSourceType.ReleasePush or ReleaseSourceType.Search)
+            {
+                _logger.Debug("Multi-season release {0} rejected. Not supported for automatic grabs", subject.Release.Title);
+                return DownloadSpecDecision.Reject(DownloadRejectionReason.MultiSeason, "Multi-season releases are not supported for automatic grabs");
+            }
+
             var coveredSeasonNumbers = (subject.MappedSeasonNumbers.Any()
                                             ? subject.MappedSeasonNumbers
                                             : subject.ParsedEpisodeInfo.SeasonNumbers)

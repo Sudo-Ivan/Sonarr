@@ -31,6 +31,7 @@ namespace NzbDrone.Core.Test.DecisionEngineTests
                                            .With(s => s.SeriesId = series.Id)
                                            .BuildList(),
                 Series = series,
+                ReleaseSource = ReleaseSourceType.InteractiveSearch,
                 Release = new ReleaseInfo
                 {
                     Title = "Series.Title.S01-05.720p.BluRay.X264-RlsGrp"
@@ -50,6 +51,34 @@ namespace NzbDrone.Core.Test.DecisionEngineTests
         public void should_return_true_if_is_a_multi_season_release_with_resolved_episodes()
         {
             Subject.IsSatisfiedBy(_remoteEpisode, new()).Accepted.Should().BeTrue();
+        }
+
+        [Test]
+        public void should_return_true_for_multi_season_release_from_user_invoked_search()
+        {
+            _remoteEpisode.ReleaseSource = ReleaseSourceType.UserInvokedSearch;
+            Subject.IsSatisfiedBy(_remoteEpisode, new()).Accepted.Should().BeTrue();
+        }
+
+        [Test]
+        public void should_return_false_for_multi_season_release_from_rss()
+        {
+            _remoteEpisode.ReleaseSource = ReleaseSourceType.Rss;
+            Subject.IsSatisfiedBy(_remoteEpisode, new()).Accepted.Should().BeFalse();
+        }
+
+        [Test]
+        public void should_return_false_for_multi_season_release_from_automatic_search()
+        {
+            _remoteEpisode.ReleaseSource = ReleaseSourceType.Search;
+            Subject.IsSatisfiedBy(_remoteEpisode, new()).Accepted.Should().BeFalse();
+        }
+
+        [Test]
+        public void should_return_false_for_multi_season_release_from_release_push()
+        {
+            _remoteEpisode.ReleaseSource = ReleaseSourceType.ReleasePush;
+            Subject.IsSatisfiedBy(_remoteEpisode, new()).Accepted.Should().BeFalse();
         }
 
         [Test]

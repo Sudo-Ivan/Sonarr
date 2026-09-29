@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using NLog;
 using NzbDrone.Common.Disk;
 using NzbDrone.Common.Extensions;
@@ -29,6 +30,9 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
 
     public class ManualImportService : IExecute<ManualImportCommand>, IManualImportService
     {
+        private static readonly Regex SeasonFolderRegex = new Regex(@"^(?:.*?[._ -])?(?:seasons?|temporadas?|staffel|saison|sezon|stagione|temp|s)[ ._-]*(?<season>\d{1,3})$",
+                                                                    RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
         private readonly IDiskProvider _diskProvider;
         private readonly IParsingService _parsingService;
         private readonly IDiskScanService _diskScanService;
@@ -348,11 +352,13 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
 
                 var downloadClientItemInfo = trackedDownload?.DownloadItem == null ? null : Parser.Parser.ParseTitle(trackedDownload.DownloadItem.Title);
 
+                var folderInfo = GetFolderEpisodeInfo(Path.GetDirectoryName(file));
+
                 var importDecisions = _importDecisionMaker.GetImportDecisions(new List<string> { file },
                     series,
                     trackedDownload?.DownloadItem,
                     downloadClientItemInfo,
-                    null,
+                    folderInfo,
                     SceneSource(series, baseFolder));
 
                 if (importDecisions.Any())
@@ -373,6 +379,35 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
                 Name = Path.GetFileNameWithoutExtension(file),
                 Size = _diskProvider.GetFileSize(file),
                 Rejections = new List<ImportRejection>()
+            };
+        }
+
+        private ParsedEpisodeInfo GetFolderEpisodeInfo(string folderPath)
+        {
+            if (folderPath.IsNullOrWhiteSpace())
+            {
+                return null;
+            }
+
+            var folderName = Path.GetFileName(folderPath);
+            var folderInfo = Parser.Parser.ParseTitle(folderName);
+
+            if (folderInfo != null)
+            {
+                return folderInfo;
+            }
+
+            var match = SeasonFolderRegex.Match(folderName);
+
+            if (!match.Success || !int.TryParse(match.Groups["season"].Value, out var seasonNumber))
+            {
+                return null;
+            }
+
+            return new ParsedEpisodeInfo
+            {
+                SeasonNumbers = new[] { seasonNumber },
+                FullSeason = true
             };
         }
 
@@ -438,6 +473,15 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
                     item.SeasonNumber = decision.LocalEpisode.SeasonNumber;
                     item.Episodes = decision.LocalEpisode.Episodes;
                 }
+            }
+
+            // When the file name alone could not be resolved, pre-select the season
+            // parsed from a season named folder, e.g. 'Season 3' or 'Show.Name.S03'
+            if (!item.SeasonNumber.HasValue &&
+                decision.LocalEpisode.FolderEpisodeInfo is { IsMultiSeason: false } folderInfo &&
+                folderInfo.SeasonNumber.HasValue)
+            {
+                item.SeasonNumber = folderInfo.SeasonNumber;
             }
 
             item.ReleaseGroup = decision.LocalEpisode.ReleaseGroup;

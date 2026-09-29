@@ -115,6 +115,7 @@ public class ReleaseController : RestController<ReleaseResource>
                     ParsedEpisodeInfo = remoteEpisode.ParsedEpisodeInfo.JsonClone(),
                     SceneMapping = remoteEpisode.SceneMapping,
                     MappedSeasonNumber = remoteEpisode.MappedSeasonNumber,
+                    MappedSeasonNumbers = remoteEpisode.MappedSeasonNumbers,
                     EpisodeRequested = remoteEpisode.EpisodeRequested,
                     DownloadAllowed = remoteEpisode.DownloadAllowed,
                     SeedConfiguration = remoteEpisode.SeedConfiguration,

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using NLog;
 using NzbDrone.Common.Extensions;
-using NzbDrone.Common.Instrumentation.Extensions;
 using NzbDrone.Core.DataAugmentation.Scene;
 using NzbDrone.Core.IndexerSearch.Definitions;
 using NzbDrone.Core.Parser.Model;
@@ -464,7 +463,6 @@ namespace NzbDrone.Core.Parser
                            .Message("Found matching series by TVDB ID {0}, an alias may be needed for: {1}", tvdbId, parsedEpisodeInfo.SeriesTitle)
                            .Property("TvdbId", tvdbId)
                            .Property("ParsedEpisodeInfo", parsedEpisodeInfo)
-                           .WriteSentryWarn("TvdbIdMatch", tvdbId.ToString(), parsedEpisodeInfo.SeriesTitle)
                            .Log();
 
                     return new FindSeriesResult(searchCriteria.Series, SeriesMatchType.Id);
@@ -476,7 +474,6 @@ namespace NzbDrone.Core.Parser
                            .Message("Found matching series by TVRage ID {0}, an alias may be needed for: {1}", tvRageId, parsedEpisodeInfo.SeriesTitle)
                            .Property("TvRageId", tvRageId)
                            .Property("ParsedEpisodeInfo", parsedEpisodeInfo)
-                           .WriteSentryWarn("TvRageIdMatch", tvRageId.ToString(), parsedEpisodeInfo.SeriesTitle)
                            .Log();
 
                     return new FindSeriesResult(searchCriteria.Series, SeriesMatchType.Id);
@@ -488,7 +485,6 @@ namespace NzbDrone.Core.Parser
                            .Message("Found matching series by IMDb ID {0}, an alias may be needed for: {1}", imdbId, parsedEpisodeInfo.SeriesTitle)
                            .Property("ImdbId", imdbId)
                            .Property("ParsedEpisodeInfo", parsedEpisodeInfo)
-                           .WriteSentryWarn("ImdbIdMatch", imdbId, parsedEpisodeInfo.SeriesTitle)
                            .Log();
 
                     return new FindSeriesResult(searchCriteria.Series, SeriesMatchType.Id);
@@ -531,7 +527,6 @@ namespace NzbDrone.Core.Parser
                            .Message("Found matching series by TVDB ID {0}, an alias may be needed for: {1}", tvdbId, parsedEpisodeInfo.SeriesTitle)
                            .Property("TvdbId", tvdbId)
                            .Property("ParsedEpisodeInfo", parsedEpisodeInfo)
-                           .WriteSentryWarn("TvdbIdMatch", tvdbId.ToString(), parsedEpisodeInfo.SeriesTitle)
                            .Log();
 
                     matchType = SeriesMatchType.Id;
@@ -548,7 +543,6 @@ namespace NzbDrone.Core.Parser
                            .Message("Found matching series by TVRage ID {0}, an alias may be needed for: {1}", tvRageId, parsedEpisodeInfo.SeriesTitle)
                            .Property("TvRageId", tvRageId)
                            .Property("ParsedEpisodeInfo", parsedEpisodeInfo)
-                           .WriteSentryWarn("TvRageIdMatch", tvRageId.ToString(), parsedEpisodeInfo.SeriesTitle)
                            .Log();
 
                     matchType = SeriesMatchType.Id;
@@ -565,7 +559,6 @@ namespace NzbDrone.Core.Parser
                            .Message("Found matching series by IMDb ID {0}, an alias may be needed for: {1}", imdbId, parsedEpisodeInfo.SeriesTitle)
                            .Property("ImdbId", imdbId)
                            .Property("ParsedEpisodeInfo", parsedEpisodeInfo)
-                           .WriteSentryWarn("ImdbIdMatch", imdbId, parsedEpisodeInfo.SeriesTitle)
                            .Log();
 
                     matchType = SeriesMatchType.Id;
@@ -743,7 +736,7 @@ namespace NzbDrone.Core.Parser
 
             // The scene mapping offset applies uniformly to every covered season
             var offset = mappedSeasonNumber - parsedEpisodeInfo.SeasonNumber.GetValueOrDefault();
-            var coveredSeasons = parsedEpisodeInfo.SeasonNumbers.Where(s => s > 0).OrderBy(s => s).ToList();
+            var coveredSeasons = parsedEpisodeInfo.SeasonNumbers.Distinct().OrderBy(s => s).ToList();
 
             // Releases named like 'S01E05-S03E10' carry a contiguous episode range that spans seasons
             var firstEpisodeNumber = parsedEpisodeInfo.EpisodeNumbers.FirstOrDefault();
