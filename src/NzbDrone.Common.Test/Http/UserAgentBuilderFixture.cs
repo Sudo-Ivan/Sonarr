@@ -1,4 +1,4 @@
-﻿using FluentAssertions;
+using FluentAssertions;
 using NUnit.Framework;
 using NzbDrone.Common.EnvironmentInfo;
 using NzbDrone.Common.Http;
@@ -10,21 +10,21 @@ namespace NzbDrone.Common.Test.Http
     public class UserAgentBuilderFixture : TestBase<UserAgentBuilder>
     {
         [Test]
-        public void should_get_user_agent_if_os_version_is_null()
+        public void should_not_include_os_details_in_user_agent()
         {
-            Mocker.GetMock<IOsInfo>().SetupGet(c => c.Version).Returns((string)null);
+            Mocker.GetMock<IOsInfo>().SetupGet(c => c.Version).Returns("12.34");
             Mocker.GetMock<IOsInfo>().SetupGet(c => c.Name).Returns("TestOS");
 
-            Subject.GetUserAgent(false).Should().NotBeNullOrWhiteSpace();
+            Subject.GetUserAgent(false).Should().NotContain("TestOS").And.NotContain("12.34");
         }
 
         [Test]
-        public void should_get_use_os_family_if_name_is_null()
+        public void should_return_simplified_user_agent()
         {
-            Mocker.GetMock<IOsInfo>().SetupGet(c => c.Version).Returns((string)null);
-            Mocker.GetMock<IOsInfo>().SetupGet(c => c.Name).Returns((string)null);
+            Mocker.GetMock<IOsInfo>().SetupGet(c => c.Version).Returns("12.34");
+            Mocker.GetMock<IOsInfo>().SetupGet(c => c.Name).Returns("TestOS");
 
-            Subject.GetUserAgent(false).Should().NotBeNullOrWhiteSpace();
+            Subject.GetUserAgent(true).Should().NotContain("TestOS").And.NotContain("12.34");
         }
     }
 }

@@ -24,16 +24,7 @@ namespace NzbDrone.Common.Http
 
         public UserAgentBuilder(IOsInfo osInfo)
         {
-            var osName = OsInfo.Os.ToString();
-
-            if (!string.IsNullOrWhiteSpace(osInfo.Name))
-            {
-                osName = osInfo.Name.ToLower();
-            }
-
-            var osVersion = osInfo.Version?.ToLower();
-
-            _userAgent = $"{BuildInfo.AppName}/{BuildInfo.Version} ({osName} {osVersion})";
+            _userAgent = $"{BuildInfo.AppName}/{BuildInfo.Version}";
             _userAgentSimplified = $"{BuildInfo.AppName}/{BuildInfo.Version.ToString(2)}";
         }
     }
