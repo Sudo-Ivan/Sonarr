@@ -1,0 +1,11 @@
+.git
+.vs
+.vscode
+node_modules
+_output
+_tests
+_temp
+**/*.csproj.user
+.github
+docker
+distribution
