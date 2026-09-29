@@ -116,6 +116,11 @@ namespace NzbDrone.Core.Parser.Model
                     return Model.ReleaseType.SingleEpisode;
                 }
 
+                if (FullSeason && IsMultiSeason)
+                {
+                    return Model.ReleaseType.MultiSeasonPack;
+                }
+
                 if (FullSeason)
                 {
                     return Model.ReleaseType.SeasonPack;

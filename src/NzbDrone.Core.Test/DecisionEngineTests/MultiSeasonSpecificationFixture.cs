@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using FizzWare.NBuilder;
 using FluentAssertions;
@@ -47,8 +47,30 @@ namespace NzbDrone.Core.Test.DecisionEngineTests
         }
 
         [Test]
-        public void should_return_false_if_is_a_multi_season_release()
+        public void should_return_true_if_is_a_multi_season_release_with_resolved_episodes()
         {
+            Subject.IsSatisfiedBy(_remoteEpisode, new()).Accepted.Should().BeTrue();
+        }
+
+        [Test]
+        public void should_return_true_if_episodes_span_only_some_covered_seasons()
+        {
+            _remoteEpisode.MappedSeasonNumbers = new[] { 1, 2 };
+            Subject.IsSatisfiedBy(_remoteEpisode, new()).Accepted.Should().BeTrue();
+        }
+
+        [Test]
+        public void should_return_false_if_no_episodes_were_resolved()
+        {
+            _remoteEpisode.Episodes.Clear();
+            Subject.IsSatisfiedBy(_remoteEpisode, new()).Accepted.Should().BeFalse();
+        }
+
+        [Test]
+        public void should_return_false_if_covered_seasons_cannot_be_determined()
+        {
+            _remoteEpisode.ParsedEpisodeInfo.SeasonNumbers = new[] { 0, 0 };
+            _remoteEpisode.MappedSeasonNumbers = Array.Empty<int>();
             Subject.IsSatisfiedBy(_remoteEpisode, new()).Accepted.Should().BeFalse();
         }
     }

@@ -209,6 +209,14 @@ namespace NzbDrone.Core.Parser
                 new Regex(@"^(?<title>.+?)(?:[-_\W](?<![()\[!]))+S(?<season>(?<!\d+)(?:\d{2})(?!\d+))(?:\.)(?<episode>\d{2,3}(?!\d+))(?:[-_. ]|$)",
                     RegexOptions.IgnoreCase | RegexOptions.Compiled),
 
+                // Multi-season pack - concatenated season tags (S01S02S03)
+                new Regex(@"^(?<title>.+?)[-_. ]+S(?<season>(?<!\d+)\d{1,2}(?!\d+))(?:S(?<season>(?<!\d+)\d{1,2}(?!\d+)))+(?:[-_. ]|$)",
+                    RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
+                // Multi-season pack - 'Seasons 1-3' or 'Seasons 1.2.3' (plural keyword)
+                new Regex(@"^(?<title>.+?)[-_. ]+(?:Seasons|Temporadas)[-_. ]+(?<season>(?<!\d+)\d{1,2}(?!\d+))(?:(?:[-_. ]{1,3})(?<season>(?<!\d+)\d{1,2}(?!\d+)))+(?:[-_. ]|$)",
+                    RegexOptions.IgnoreCase | RegexOptions.Compiled),
+
                 // Multi-season pack
                 new Regex(@"^(?<title>.+?)(Complete Series)?[-_. ]+(?:S|(?:Season|Saison|Series|Stagione)[_. ])(?<season>(?<!\d+)(?:\d{1,2})(?!\d+))(?:(?:[-_. ]{1}|[-_. ]{3})(?:S|(?:Season|Saison|Series|Stagione)[_. ])?(?<season>(?<!\d+)(?:\d{1,2})(?!\d+))){1,}",
                     RegexOptions.IgnoreCase | RegexOptions.Compiled),

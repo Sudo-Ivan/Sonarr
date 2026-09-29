@@ -165,11 +165,14 @@ namespace NzbDrone.Core.Parser
 
         public RemoteEpisode Map(ParsedEpisodeInfo parsedEpisodeInfo, int seriesId, IEnumerable<int> episodeIds)
         {
+            var episodes = _episodeService.GetEpisodes(episodeIds);
+
             return new RemoteEpisode
                    {
                        ParsedEpisodeInfo = parsedEpisodeInfo,
                        Series = _seriesService.GetSeries(seriesId),
-                       Episodes = _episodeService.GetEpisodes(episodeIds)
+                       Episodes = episodes,
+                       MappedSeasonNumbers = episodes.Select(e => e.SeasonNumber).Distinct().OrderBy(n => n).ToArray()
                    };
         }
 
@@ -237,6 +240,7 @@ namespace NzbDrone.Core.Parser
                     ValidateParsedEpisodeInfo.ValidateForSeriesType(parsedEpisodeInfo, series))
                 {
                     remoteEpisode.Episodes = GetEpisodes(parsedEpisodeInfo, series, remoteEpisode.MappedSeasonNumber.Value, sceneSource, searchCriteria);
+                    remoteEpisode.MappedSeasonNumbers = remoteEpisode.Episodes.Select(e => e.SeasonNumber).Distinct().OrderBy(n => n).ToArray();
                 }
             }
 
@@ -275,6 +279,12 @@ namespace NzbDrone.Core.Parser
 
         private List<Episode> GetEpisodes(ParsedEpisodeInfo parsedEpisodeInfo, Series series, int mappedSeasonNumber, bool sceneSource, SearchCriteriaBase searchCriteria)
         {
+            // Multi-season releases cover more than one season, gather episodes for every covered season
+            if (parsedEpisodeInfo.IsMultiSeason && !parsedEpisodeInfo.IsAbsoluteNumbering)
+            {
+                return GetMultiSeasonEpisodes(parsedEpisodeInfo, series, mappedSeasonNumber, sceneSource);
+            }
+
             if (parsedEpisodeInfo.FullSeason)
             {
                 if (series.UseSceneNumbering && sceneSource)
@@ -724,6 +734,65 @@ namespace NzbDrone.Core.Parser
             }
 
             return result;
+        }
+
+        private List<Episode> GetMultiSeasonEpisodes(ParsedEpisodeInfo parsedEpisodeInfo, Series series, int mappedSeasonNumber, bool sceneSource)
+        {
+            var result = new List<Episode>();
+            var useSceneNumbering = series.UseSceneNumbering && sceneSource;
+
+            // The scene mapping offset applies uniformly to every covered season
+            var offset = mappedSeasonNumber - parsedEpisodeInfo.SeasonNumber.GetValueOrDefault();
+            var coveredSeasons = parsedEpisodeInfo.SeasonNumbers.Where(s => s > 0).OrderBy(s => s).ToList();
+
+            // Releases named like 'S01E05-S03E10' carry a contiguous episode range that spans seasons
+            var firstEpisodeNumber = parsedEpisodeInfo.EpisodeNumbers.FirstOrDefault();
+            var lastEpisodeNumber = parsedEpisodeInfo.EpisodeNumbers.LastOrDefault();
+
+            for (var i = 0; i < coveredSeasons.Count; i++)
+            {
+                var mappedSeason = coveredSeasons[i] + offset;
+                List<Episode> episodes = null;
+
+                if (useSceneNumbering)
+                {
+                    episodes = _episodeService.GetEpisodesBySceneSeason(series.Id, mappedSeason);
+                }
+
+                if (episodes == null || episodes.Empty())
+                {
+                    episodes = _episodeService.GetEpisodesBySeason(series.Id, mappedSeason) ?? new List<Episode>();
+                }
+
+                if (parsedEpisodeInfo.EpisodeNumbers.Length >= 2)
+                {
+                    episodes = episodes.Where(e =>
+                    {
+                        var number = useSceneNumbering && e.SceneEpisodeNumber.HasValue ? e.SceneEpisodeNumber.Value : e.EpisodeNumber;
+
+                        if (i == 0 && i == coveredSeasons.Count - 1)
+                        {
+                            return number >= firstEpisodeNumber && number <= lastEpisodeNumber;
+                        }
+
+                        if (i == 0)
+                        {
+                            return number >= firstEpisodeNumber;
+                        }
+
+                        if (i == coveredSeasons.Count - 1)
+                        {
+                            return number <= lastEpisodeNumber;
+                        }
+
+                        return true;
+                    }).ToList();
+                }
+
+                result.AddRange(episodes);
+            }
+
+            return result.DistinctBy(e => e.Id).ToList();
         }
     }
 }

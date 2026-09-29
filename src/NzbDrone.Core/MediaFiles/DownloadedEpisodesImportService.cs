@@ -205,12 +205,9 @@ namespace NzbDrone.Core.MediaFiles
 
             if (downloadClientItemInfo is { IsMultiSeason: true })
             {
-                _logger.Debug("Download client item is marked as multi-season, not processing automatically to avoid importing incorrect files");
+                _logger.Debug("Download client item is a multi-season release, importing files per season for: {0}", directoryInfo.FullName);
 
-                return new List<ImportResult>
-                {
-                    RejectionResult(ImportRejectionReason.MultiSeason, "Multi-season download, unable to import automatically")
-                };
+                return ProcessMultiSeasonFolder(directoryInfo, importMode, series, downloadClientItem, downloadClientItemInfo);
             }
 
             var decisions = _importDecisionMaker.GetImportDecisions(videoFiles.ToList(), series, downloadClientItem, downloadClientItemInfo, folderInfo, true);
@@ -242,6 +239,83 @@ namespace NzbDrone.Core.MediaFiles
             }
 
             return importResults;
+        }
+
+        private List<ImportResult> ProcessMultiSeasonFolder(DirectoryInfo directoryInfo, ImportMode importMode, Series series, DownloadClientItem downloadClientItem, ParsedEpisodeInfo downloadClientItemInfo)
+        {
+            _logger.Debug("Processing multi-season folder: {0}", directoryInfo.FullName);
+
+            var allResults = new List<ImportResult>();
+
+            var subfolders = _diskProvider.GetDirectories(directoryInfo.FullName);
+            var filteredSubfolders = _diskScanService.FilterPaths(directoryInfo.FullName, subfolders).ToList();
+            var rootVideoFiles = _diskScanService.FilterPaths(directoryInfo.FullName, _diskScanService.GetVideoFiles(directoryInfo.FullName, false)).ToList();
+
+            if (!filteredSubfolders.Any() && !rootVideoFiles.Any())
+            {
+                _logger.Debug("No season subfolders or root video files found in multi-season folder: {0}", directoryInfo.FullName);
+
+                return new List<ImportResult>
+                {
+                    RejectionResult(ImportRejectionReason.MultiSeason, "Multi-season download could not be imported automatically. No season subfolders or video files were found in the expected locations. Manual import may be required.")
+                };
+            }
+
+            foreach (var subfolder in filteredSubfolders)
+            {
+                var subDirInfo = new DirectoryInfo(subfolder);
+                var subVideoFiles = _diskScanService.FilterPaths(subfolder, _diskScanService.GetVideoFiles(subfolder)).ToList();
+
+                if (!subVideoFiles.Any())
+                {
+                    _logger.Debug("No video files in season subfolder: {0}", subfolder);
+                    continue;
+                }
+
+                var subfolderFolderInfo = Parser.Parser.ParseTitle(subDirInfo.Name);
+
+                _logger.Debug("Processing season subfolder {0} with {1} files", subfolder, subVideoFiles.Count);
+
+                var decisions = _importDecisionMaker.GetImportDecisions(subVideoFiles, series, downloadClientItem, downloadClientItemInfo, subfolderFolderInfo, true);
+
+                allResults.AddRange(_importApprovedEpisodes.Import(decisions, true, downloadClientItem, importMode));
+            }
+
+            if (rootVideoFiles.Any())
+            {
+                _logger.Debug("Processing {0} flat root-level video files", rootVideoFiles.Count);
+
+                var decisions = _importDecisionMaker.GetImportDecisions(rootVideoFiles, series, downloadClientItem, downloadClientItemInfo, null, true);
+
+                allResults.AddRange(_importApprovedEpisodes.Import(decisions, true, downloadClientItem, importMode));
+            }
+
+            if (importMode == ImportMode.Auto)
+            {
+                importMode = (downloadClientItem == null || downloadClientItem.CanMoveFiles) ? ImportMode.Move : ImportMode.Copy;
+            }
+
+            if (importMode == ImportMode.Move &&
+                allResults.Any(i => i.Result == ImportResultType.Imported) &&
+                ShouldDeleteFolder(directoryInfo, series))
+            {
+                _logger.Debug("Deleting multi-season folder after successful import");
+
+                try
+                {
+                    _diskProvider.DeleteFolder(directoryInfo.FullName, true);
+                }
+                catch (IOException e)
+                {
+                    _logger.Debug(e, "Unable to delete multi-season folder: {0}", e.Message);
+                }
+            }
+            else if (allResults.Empty())
+            {
+                allResults.AddIfNotNull(CheckEmptyResultForIssue(directoryInfo.FullName));
+            }
+
+            return allResults;
         }
 
         private List<ImportResult> ProcessFile(FileInfo fileInfo, ImportMode importMode, DownloadClientItem downloadClientItem)

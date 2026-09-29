@@ -46,6 +46,8 @@ namespace Sonarr.Api.V3.Queue
         public string Indexer { get; set; }
         public string OutputPath { get; set; }
         public bool EpisodeHasFile { get; set; }
+        public bool IsMultiSeason { get; set; }
+        public int[] SeasonNumbers { get; set; }
 
         [Obsolete("Will be replaced by SizeLeft")]
         public decimal Sizeleft { get; set; }
@@ -99,6 +101,10 @@ namespace Sonarr.Api.V3.Queue
                 Indexer = model.Indexer,
                 OutputPath = model.OutputPath,
                 EpisodeHasFile = model.Episode?.HasFile ?? false,
+                IsMultiSeason = model.RemoteEpisode?.ParsedEpisodeInfo?.IsMultiSeason ?? false,
+                SeasonNumbers = model.RemoteEpisode?.MappedSeasonNumbers?.Length > 0
+                    ? model.RemoteEpisode.MappedSeasonNumbers
+                    : model.SeasonNumber.HasValue ? new[] { model.SeasonNumber.Value } : null,
 
                 #pragma warning disable CS0618
                 Sizeleft = model.SizeLeft,

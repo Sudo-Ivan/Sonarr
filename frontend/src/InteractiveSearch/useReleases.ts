@@ -47,6 +47,7 @@ export interface Release extends ModelBase {
   languages: Language[];
   mappedSeriesId?: number;
   mappedSeasonNumber?: number;
+  mappedSeasonNumbers?: number[];
   mappedEpisodeNumbers?: number[];
   mappedAbsoluteEpisodeNumbers?: number[];
   mappedEpisodeInfo: ReleaseEpisode[];
@@ -63,6 +64,8 @@ export interface ParsedInfo {
   releaseGroup: string;
   releaseHash: string;
   fullSeason: boolean;
+  isMultiSeason: boolean;
+  seasonNumbers: number[];
   seasonNumber: number | null;
   seriesTitle: string;
   episodeNumbers: number[];

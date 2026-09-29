@@ -113,6 +113,10 @@ namespace NzbDrone.Core.Test.ParserTests
         [TestCase("Series Title S01 S02 S03 S04", "Series Title", new[] { 1, 2, 3, 4 })]
         [TestCase("Series Title S01 S03 S04", "Series Title", new[] { 1, 3, 4 })]
         [TestCase("Series Title S01 S04", "Series Title", new[] { 1, 2, 3, 4 })]
+        [TestCase("Series.Title.S01S02S03.1080p.BluRay.x264-Group", "Series Title", new[] { 1, 2, 3 })]
+        [TestCase("Series Title S01S02S03", "Series Title", new[] { 1, 2, 3 })]
+        [TestCase("Series Title Seasons 1-3 1080p BluRay x264-Group", "Series Title", new[] { 1, 2, 3 })]
+        [TestCase("Series.Title.Seasons.1.2.3.1080p.BluRay.x264-Group", "Series Title", new[] { 1, 2, 3 })]
         public void should_parse_multi_season_release(string postTitle, string title, int[] expectedSeasons)
         {
             var result = Parser.Parser.ParseTitle(postTitle);

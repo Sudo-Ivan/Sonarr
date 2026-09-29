@@ -30,6 +30,8 @@ namespace Sonarr.Api.V3.Indexers
         public string ReleaseHash { get; set; }
         public string Title { get; set; }
         public bool FullSeason { get; set; }
+        public bool IsMultiSeason { get; set; }
+        public int[] SeasonNumbers { get; set; }
         public bool SceneSource { get; set; }
         public int SeasonNumber { get; set; }
         public List<Language> Languages { get; set; }
@@ -39,6 +41,7 @@ namespace Sonarr.Api.V3.Indexers
         public int[] EpisodeNumbers { get; set; }
         public int[] AbsoluteEpisodeNumbers { get; set; }
         public int? MappedSeasonNumber { get; set; }
+        public int[] MappedSeasonNumbers { get; set; }
         public int[] MappedEpisodeNumbers { get; set; }
         public int[] MappedAbsoluteEpisodeNumbers { get; set; }
         public int? MappedSeriesId { get; set; }
@@ -120,6 +123,8 @@ namespace Sonarr.Api.V3.Indexers
                 ReleaseHash = parsedEpisodeInfo.ReleaseHash,
                 Title = releaseInfo.Title,
                 FullSeason = parsedEpisodeInfo.FullSeason,
+                IsMultiSeason = parsedEpisodeInfo.IsMultiSeason,
+                SeasonNumbers = parsedEpisodeInfo.SeasonNumbers,
                 SeasonNumber = parsedEpisodeInfo.SeasonNumber ?? -1,
                 Languages = remoteEpisode.Languages,
                 AirDate = parsedEpisodeInfo.AirDate,
@@ -128,6 +133,7 @@ namespace Sonarr.Api.V3.Indexers
                 AbsoluteEpisodeNumbers = parsedEpisodeInfo.AbsoluteEpisodeNumbers,
                 MappedSeriesId = remoteEpisode.Series?.Id,
                 MappedSeasonNumber = remoteEpisode.Episodes.FirstOrDefault()?.SeasonNumber,
+                MappedSeasonNumbers = remoteEpisode.MappedSeasonNumbers,
                 MappedEpisodeNumbers = remoteEpisode.Episodes.Select(v => v.EpisodeNumber).ToArray(),
                 MappedAbsoluteEpisodeNumbers = remoteEpisode.Episodes.Where(v => v.AbsoluteEpisodeNumber.HasValue).Select(v => v.AbsoluteEpisodeNumber.Value).ToArray(),
                 MappedEpisodeInfo = remoteEpisode.Episodes.Select(v => new ReleaseEpisodeResource(v)),

@@ -500,30 +500,35 @@ namespace NzbDrone.Core.Test.MediaFiles
         }
 
         [Test]
-        public void should_reject_if_download_is_multi_season()
+        public void should_import_multi_season_download()
         {
             GivenValidSeries();
 
             _trackedDownload.DownloadItem.Title = "Series Title S01-S11";
 
-            var folderName = @"C:\media\ba09030e-1234-1234-1234-123456789abc\[HorribleSubs] Maria the Virgin Witch - 09 [720p]".AsOsAgnostic();
+            var folderName = @"C:\media\ba09030e-1234-1234-1234-123456789abc\Series Title S01-S11".AsOsAgnostic();
 
             Mocker.GetMock<IDiskProvider>().Setup(c => c.FolderExists(folderName))
                 .Returns(true);
 
-            var result = Subject.ProcessPath(folderName, ImportMode.Auto, _trackedDownload.RemoteEpisode.Series, _trackedDownload.DownloadItem);
-
-            result.Count.Should().Be(1);
-            result.First().Result.Should().Be(ImportResultType.Rejected);
-            result.First().ImportDecision.Rejections.First().Reason.Should().Be(ImportRejectionReason.MultiSeason);
-
-            Mocker.GetMock<IParsingService>().Setup(c => c.GetSeries("foldername")).Returns((Series)null);
+            var imported = new List<ImportDecision> { new(new LocalEpisode()) };
 
             Mocker.GetMock<IMakeImportDecision>()
-                .Verify(c => c.GetImportDecisions(It.IsAny<List<string>>(), It.IsAny<Series>(), It.IsAny<DownloadClientItem>(), It.IsAny<ParsedEpisodeInfo>(), It.IsAny<ParsedEpisodeInfo>(), It.IsAny<bool>(), true),
-                    Times.Never());
+                  .Setup(s => s.GetImportDecisions(It.IsAny<List<string>>(), It.IsAny<Series>(), It.IsAny<DownloadClientItem>(), It.IsAny<ParsedEpisodeInfo>(), It.IsAny<ParsedEpisodeInfo>(), true))
+                  .Returns(imported);
 
-            VerifyNoImport();
+            Mocker.GetMock<IImportApprovedEpisodes>()
+                  .Setup(s => s.Import(It.IsAny<List<ImportDecision>>(), true, It.IsAny<DownloadClientItem>(), It.IsAny<ImportMode>()))
+                  .Returns(imported.Select(i => new ImportResult(i)).ToList());
+
+            var result = Subject.ProcessPath(folderName, ImportMode.Auto, _trackedDownload.RemoteEpisode.Series, _trackedDownload.DownloadItem);
+
+            result.Should().NotBeEmpty();
+            result.Should().OnlyContain(r => r.Result == ImportResultType.Imported);
+
+            Mocker.GetMock<IMakeImportDecision>()
+                .Verify(c => c.GetImportDecisions(It.IsAny<List<string>>(), It.IsAny<Series>(), It.IsAny<DownloadClientItem>(), It.IsAny<ParsedEpisodeInfo>(), It.IsAny<ParsedEpisodeInfo>(), true),
+                    Times.AtLeastOnce());
         }
 
         private void VerifyNoImport()

@@ -1,4 +1,5 @@
-﻿using NLog;
+using System.Linq;
+using NLog;
 using NzbDrone.Core.Parser.Model;
 
 namespace NzbDrone.Core.DecisionEngine.Specifications
@@ -17,10 +18,28 @@ namespace NzbDrone.Core.DecisionEngine.Specifications
 
         public virtual DownloadSpecDecision IsSatisfiedBy(RemoteEpisode subject, ReleaseDecisionInformation information)
         {
-            if (subject.ParsedEpisodeInfo.IsMultiSeason)
+            if (!subject.ParsedEpisodeInfo.IsMultiSeason)
             {
-                _logger.Debug("Multi-season release {0} rejected. Not supported", subject.Release.Title);
-                return DownloadSpecDecision.Reject(DownloadRejectionReason.MultiSeason, "Multi-season releases are not supported");
+                return DownloadSpecDecision.Accept();
+            }
+
+            var coveredSeasonNumbers = (subject.MappedSeasonNumbers.Any()
+                                            ? subject.MappedSeasonNumbers
+                                            : subject.ParsedEpisodeInfo.SeasonNumbers)
+                                       .Where(n => n > 0)
+                                       .Distinct()
+                                       .ToList();
+
+            if (!coveredSeasonNumbers.Any())
+            {
+                _logger.Debug("Multi-season release {0} rejected. Unable to determine covered seasons", subject.Release.Title);
+                return DownloadSpecDecision.Reject(DownloadRejectionReason.MultiSeason, "Multi-season release rejected. Unable to determine covered seasons.");
+            }
+
+            if (!subject.Episodes.Any())
+            {
+                _logger.Debug("Multi-season release {0} rejected. No episodes could be resolved for the covered seasons", subject.Release.Title);
+                return DownloadSpecDecision.Reject(DownloadRejectionReason.MultiSeason, "Multi-season release rejected. No episodes could be resolved for the covered seasons.");
             }
 
             return DownloadSpecDecision.Accept();

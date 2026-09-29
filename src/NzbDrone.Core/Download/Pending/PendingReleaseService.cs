@@ -381,6 +381,7 @@ namespace NzbDrone.Core.Download.Pending
                 if (knownRemoteEpisodes != null && knownRemoteEpisodes.TryGetValue(release.Release.Title, out var knownRemoteEpisode))
                 {
                     release.RemoteEpisode.MappedSeasonNumber = knownRemoteEpisode.MappedSeasonNumber;
+                    release.RemoteEpisode.MappedSeasonNumbers = knownRemoteEpisode.MappedSeasonNumbers;
                     release.RemoteEpisode.Episodes = knownRemoteEpisode.Episodes;
                 }
                 else if (ValidateParsedEpisodeInfo.ValidateForSeriesType(release.ParsedEpisodeInfo, series))
@@ -390,6 +391,7 @@ namespace NzbDrone.Core.Download.Pending
                         var remoteEpisode = _parsingService.Map(release.ParsedEpisodeInfo, series);
 
                         release.RemoteEpisode.MappedSeasonNumber = remoteEpisode.MappedSeasonNumber;
+                        release.RemoteEpisode.MappedSeasonNumbers = remoteEpisode.MappedSeasonNumbers;
                         release.RemoteEpisode.Episodes = remoteEpisode.Episodes;
                     }
                     catch (InvalidOperationException ex)
