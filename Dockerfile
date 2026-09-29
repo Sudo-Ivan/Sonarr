@@ -43,7 +43,7 @@ LABEL org.opencontainers.image.title="Sonarr" \
       org.opencontainers.image.base.name="mcr.microsoft.com/dotnet/runtime-deps:10.0-noble-chiseled-extra"
 
 ENV XDG_CONFIG_HOME=/config/.config \
-    SONARR__BRANCH__NAME=multi-season-support \
+    SONARR__BRANCH__NAME=master \
     SONARR__AUTH__REQUIRED=DisabledForLocalAddresses \
     COMPlus_EnableDiagnostics=0
 

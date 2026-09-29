@@ -3,7 +3,7 @@ name: CI
 on:
   push:
     branches:
-      - multi-season-support
+      - master
   workflow_dispatch:
 
 permissions: {}
