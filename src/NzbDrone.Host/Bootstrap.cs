@@ -112,6 +112,7 @@ namespace NzbDrone.Host
                     services.Configure<ServerOptions>(config.GetSection("Sonarr:Server"));
                     services.Configure<LogOptions>(config.GetSection("Sonarr:Log"));
                     services.Configure<UpdateOptions>(config.GetSection("Sonarr:Update"));
+                    services.Configure<McpOptions>(config.GetSection("Sonarr:Mcp"));
                 })
                 .Build();
         }

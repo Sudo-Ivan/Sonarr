@@ -236,6 +236,10 @@ namespace NzbDrone.Host
 
             services.AddAppAuthentication();
 
+            services.AddMcpServer()
+                .WithHttpTransport()
+                .WithTools<Sonarr.Http.Mcp.SonarrMcpTools>();
+
             services.AddOptions<MiniProfilerOptions>()
                 .Configure<IConfigFileProvider>((options, configFileProvider) =>
                 {
@@ -373,6 +377,11 @@ namespace NzbDrone.Host
                 if (configFileProvider.ProfilerEnabled)
                 {
                     x.MapPost("/profiler/results", context => Task.CompletedTask).RequireAuthorization("UI");
+                }
+
+                if (configFileProvider.McpEnabled)
+                {
+                    x.MapMcp("/mcp");
                 }
 
                 x.MapControllers();

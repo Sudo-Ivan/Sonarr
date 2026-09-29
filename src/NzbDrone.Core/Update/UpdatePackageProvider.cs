@@ -1,10 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using NzbDrone.Common.Cloud;
-using NzbDrone.Common.EnvironmentInfo;
+using System.Linq;
 using NzbDrone.Common.Http;
-using NzbDrone.Core.Datastore;
+using NzbDrone.Core.Configuration;
 
 namespace NzbDrone.Core.Update
 {
@@ -16,61 +14,79 @@ namespace NzbDrone.Core.Update
 
     public class UpdatePackageProvider : IUpdatePackageProvider
     {
-        private readonly IHttpClient _httpClient;
-        private readonly IHttpRequestBuilderFactory _requestBuilder;
-        private readonly IPlatformInfo _platformInfo;
-        private readonly IMainDatabase _mainDatabase;
+        private const int MaxReleases = 10;
 
-        public UpdatePackageProvider(IHttpClient httpClient, ISonarrCloudRequestBuilder requestBuilder, IPlatformInfo platformInfo, IMainDatabase mainDatabase)
+        private readonly IHttpClient _httpClient;
+        private readonly IConfigFileProvider _configFileProvider;
+
+        public UpdatePackageProvider(IHttpClient httpClient, IConfigFileProvider configFileProvider)
         {
-            _platformInfo = platformInfo;
-            _requestBuilder = requestBuilder.Services;
             _httpClient = httpClient;
-            _mainDatabase = mainDatabase;
+            _configFileProvider = configFileProvider;
         }
 
         public UpdatePackage GetLatestUpdate(string branch, Version currentVersion)
         {
-            var request = _requestBuilder.Create()
-                                         .Resource("/update/{branch}")
-                                         .AddQueryParam("version", currentVersion)
-                                         .AddQueryParam("os", OsInfo.Os.ToString().ToLowerInvariant())
-                                         .AddQueryParam("arch", RuntimeInformation.OSArchitecture)
-                                         .AddQueryParam("runtime", "netcore")
-                                         .AddQueryParam("runtimeVer", _platformInfo.Version)
-                                         .AddQueryParam("dbType", _mainDatabase.DatabaseType)
-                                         .AddQueryParam("includeMajorVersion", true)
-                                         .SetSegment("branch", branch);
+            var releases = GetReleases();
 
-            var update = _httpClient.Get<UpdatePackageAvailable>(request.Build()).Resource;
+            var latest = releases
+                .Select(r => new { Release = r, Version = ParseVersion(r.TagName) })
+                .Where(r => r.Version != null)
+                .OrderByDescending(r => r.Version)
+                .FirstOrDefault();
 
-            if (!update.Available)
+            if (latest == null || latest.Version <= currentVersion)
             {
                 return null;
             }
 
-            return update.UpdatePackage;
+            return MapRelease(latest.Release, latest.Version, branch);
         }
 
-        public List<UpdatePackage> GetRecentUpdates(string branch, Version currentVersion, Version previousVersion)
+        public List<UpdatePackage> GetRecentUpdates(string branch, Version currentVersion, Version previousVersion = null)
         {
-            var request = _requestBuilder.Create()
-                                         .Resource("/update/{branch}/changes")
-                                         .AddQueryParam("version", currentVersion)
-                                         .AddQueryParam("os", OsInfo.Os.ToString().ToLowerInvariant())
-                                         .AddQueryParam("arch", RuntimeInformation.OSArchitecture)
-                                         .AddQueryParam("runtime", "netcore")
-                                         .AddQueryParam("runtimeVer", _platformInfo.Version)
-                                         .SetSegment("branch", branch);
+            return GetReleases()
+                .Select(r => new { Release = r, Version = ParseVersion(r.TagName) })
+                .Where(r => r.Version != null)
+                .OrderByDescending(r => r.Version)
+                .Take(MaxReleases)
+                .Select(r => MapRelease(r.Release, r.Version, branch))
+                .ToList();
+        }
 
-            if (previousVersion != null && previousVersion != currentVersion)
+        private List<GitHubRelease> GetReleases()
+        {
+            var request = new HttpRequestBuilder(_configFileProvider.UpdateFeedUrl)
+                .Resource("/releases")
+                .AddQueryParam("per_page", MaxReleases)
+                .Build();
+
+            var response = _httpClient.Get<List<GitHubRelease>>(request);
+
+            return response.Resource?.Where(r => !r.Draft && !r.Prerelease).ToList() ?? new List<GitHubRelease>();
+        }
+
+        private static Version ParseVersion(string tagName)
+        {
+            if (string.IsNullOrWhiteSpace(tagName))
             {
-                request.AddQueryParam("prevVersion", previousVersion);
+                return null;
             }
 
-            var updates = _httpClient.Get<List<UpdatePackage>>(request.Build());
+            var versionString = tagName.TrimStart('v', 'V');
 
-            return updates.Resource;
+            return Version.TryParse(versionString, out var version) ? version : null;
+        }
+
+        private static UpdatePackage MapRelease(GitHubRelease release, Version version, string branch)
+        {
+            return new UpdatePackage
+            {
+                Version = version,
+                ReleaseDate = release.PublishedAt,
+                Url = release.HtmlUrl,
+                Branch = branch
+            };
         }
     }
 }
