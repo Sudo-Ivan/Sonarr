@@ -1,85 +1,42 @@
-# <img width="24px" src="./Logo/256.png" alt="Sonarr"></img> Sonarr
+# Sonarr
 
-[![Translated](https://translate.servarr.com/widget/servarr/sonarr/svg-badge.svg)](https://translate.servarr.com/engage/servarr/)
-[![Backers on Open Collective](https://opencollective.com/Sonarr/backers/badge.svg)](#backers)
-[![Sponsors on Open Collective](https://opencollective.com/Sonarr/sponsors/badge.svg)](#sponsors)
-[![Mega Sponsors on Open Collective](https://opencollective.com/Sonarr/megasponsors/badge.svg)](#mega-sponsors)
+Sonarr is a PVR for Usenet and BitTorrent users. It monitors multiple RSS feeds for new episodes of your favorite shows and will grab, sort and rename them. It can also be configured to automatically upgrade the quality of files already downloaded when a better quality format becomes available.
 
-Sonarr is a PVR for Usenet and BitTorrent users. It can monitor multiple RSS feeds for new episodes of your favorite shows and will grab, sort and rename them. It can also be configured to automatically upgrade the quality of files already downloaded when a better quality format becomes available.
+This is a hard fork of the upstream Sonarr project with telemetry and Sentry removed, plus additional features listed below.
 
-## Getting Started
+## Fork changes
 
-- [Download/Installation](https://sonarr.tv/#downloads-v3)
-- [FAQ](https://wiki.servarr.com/sonarr/faq)
-- [Wiki](https://wiki.servarr.com/Sonarr)
-- [API Documentation](https://sonarr.tv/docs/api)
-- [Donate](https://sonarr.tv/donate)
-
-## Support
-
-Note: GitHub Issues are for Bugs and Feature Requests Only
-
-- [Forums](https://forums.sonarr.tv/)
-- [Discord](https://discord.gg/M6BvZn5)
-- [GitHub - Bugs and Feature Requests Only](https://github.com/Sonarr/Sonarr/issues)
-- [IRC](https://web.libera.chat/?channels=#sonarr)
-- [Reddit](https://www.reddit.com/r/sonarr)
-- [Wiki](https://wiki.servarr.com/sonarr)
+- Multi-season release support for user-initiated grabs (interactive and user-invoked search, plus externally added download client items). RSS and automatic search releases stay rejected
+- Per-season queue counts and a multi-season indicator in interactive search results
+- Sentry error reporting, analytics and piwik tracking removed, including the anonymous user hash sent on startup
+- Self-contained multi-arch Docker image published to ghcr.io, cosign signed and trivy scanned
 
 ## Features
 
-### Current Features
-
 - Support for major platforms: Windows, Linux, macOS, Raspberry Pi, etc.
 - Automatically detects new episodes
-- Can scan your existing library and download any missing episodes
-- Can watch for better quality of the episodes you already have and do an automatic upgrade. _eg. from DVD to Blu-Ray_
-- Automatic failed download handling will try another release if one fails
-- Manual search so you can pick any release or to see why a release was not downloaded automatically
+- Scans your existing library and downloads missing episodes
+- Automatic quality upgrades when better releases appear
+- Automatic failed download handling
+- Manual search
 - Fully configurable episode renaming
-- Full integration with SABnzbd and NZBGet
-- Full integration with Kodi, Plex (notification, library update, metadata)
-- Full support for specials and multi-episode releases
-- And a beautiful UI
+- Full integration with SABnzbd, NZBGet, qBittorrent, Deluge, rTorrent, Transmission, uTorrent and other clients
 
-## Contributing
+## Docker
 
-### Development
+```sh
+docker run -d \
+  -p 8989:8989 \
+  -v sonarr-config:/config \
+  -v /media:/media \
+  ghcr.io/sudo-ivan/sonarr:latest
+```
 
-This project exists thanks to all the people who contribute. [Contribute](CONTRIBUTING.md).
+Multi-arch image: linux/amd64 and linux/arm64, zstd compressed, non-root, cosign keyless signed.
 
-<a href="https://github.com/Sonarr/Sonarr/graphs/contributors"><img src="https://opencollective.com/Sonarr/contributors.svg?width=890&button=false" /></a>
+## Building
 
-### Supporters
-
-This project would not be possible without the support of our users and software providers.
-[**Become a sponsor or backer**](https://opencollective.com/sonarr) to help us out!
-
-#### Mega Sponsors
-
-[![Sponsors](https://opencollective.com/sonarr/tiers/mega-sponsor.svg?width=890)](https://opencollective.com/sonarr/contribute/mega-sponsor-21443/checkout)
-
-#### Sponsors
-
-[![Flexible Sponsors](https://opencollective.com/sonarr/sponsors.svg?width=890)](https://opencollective.com/sonarr/contribute/sponsor-21457/checkout)
-
-#### Backers
-
-[![Backers](https://opencollective.com/sonarr/backers.svg?width=890)](https://opencollective.com/sonarr/contribute/backer-21442/checkout)
-
-#### JetBrains
-
-Thank you to [<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jetbrains.png" alt="JetBrains" width="96">](http://www.jetbrains.com/) for providing us with free licenses to their great tools
-
-[<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/TeamCity.png" alt="TeamCity" width="64">](http://www.jetbrains.com/teamcity/)
-
-[<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/ReSharper.png" alt="ReSharper" width="64">](http://www.jetbrains.com/resharper/)
-
-[<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/dotTrace.png" alt="dotTrace" width="64">](http://www.jetbrains.com/dottrace/)
-
-[<img src="https://resources.jetbrains.com/storage/products/company/brand/logos/Rider.png" alt="Rider" width="64">](http://www.jetbrains.com/rider/)
-
-### Licenses
-
-- [GNU GPL v3](http://www.gnu.org/licenses/gpl.html)
-- Copyright 2010-2025
+```sh
+dotnet build src/NzbDrone.Console/Sonarr.Console.csproj
+yarn install --frozen-lockfile && yarn build
+```

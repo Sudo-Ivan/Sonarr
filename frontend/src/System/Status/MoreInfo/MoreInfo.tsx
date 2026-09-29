@@ -58,13 +58,6 @@ function MoreInfo() {
         </DescriptionListItemDescription>
 
         <DescriptionListItemTitle>
-          {translate('Donations')}
-        </DescriptionListItemTitle>
-        <DescriptionListItemDescription>
-          <Link to="https://sonarr.tv/donate">sonarr.tv/donate</Link>
-        </DescriptionListItemDescription>
-
-        <DescriptionListItemTitle>
           {translate('Source')}
         </DescriptionListItemTitle>
         <DescriptionListItemDescription>
