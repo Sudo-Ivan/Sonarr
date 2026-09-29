@@ -8,39 +8,51 @@ COPY . .
 RUN corepack yarn build
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0.401@sha256:35d40304542c8689331f8cab17c65926cdf48fe711e289321d71924b230a7d29 AS backend
+ARG TARGETARCH
 WORKDIR /build
 COPY . .
-RUN dotnet publish src/NzbDrone.Console/Sonarr.Console.csproj \
+RUN rid="linux-$( [ "${TARGETARCH}" = "amd64" ] && echo x64 || echo "${TARGETARCH}" )" && \
+    dotnet publish src/NzbDrone.Console/Sonarr.Console.csproj \
     -c Release \
     -f net10.0 \
-    -r linux-x64 \
+    -r "${rid}" \
     --self-contained \
     -p:SolutionDir=/build/src/ \
     -o /app/bin && \
     dotnet publish src/NzbDrone.Mono/Sonarr.Mono.csproj \
     -c Release \
     -f net10.0 \
-    -r linux-x64 \
+    -r "${rid}" \
     --self-contained \
     -p:SolutionDir=/build/src/ \
-    -o /app/bin
+    -o /app/bin && \
+    mkdir -p /config && chown 1000:1000 /config
 
-FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-noble@sha256:099f6f87ed745377dd27bd722f0d1a352bca71b4fddaabfd75e7c064bcaa82da AS runtime
-LABEL org.opencontainers.image.source="https://github.com/Sudo-Ivan/Sonarr" \
-      org.opencontainers.image.licenses="GPL-3.0"
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-noble-chiseled-extra@sha256:9a3e4e315a3eae3be20b73739ae84fa7e4ffb2a47a234f3bef30825f0543fe1b AS runtime
+ARG VERSION="local"
+ARG REVISION=""
+LABEL org.opencontainers.image.title="Sonarr" \
+      org.opencontainers.image.description="PVR for Usenet and BitTorrent users. Multi-season support fork with telemetry removed." \
+      org.opencontainers.image.url="https://github.com/Sudo-Ivan/Sonarr" \
+      org.opencontainers.image.source="https://github.com/Sudo-Ivan/Sonarr" \
+      org.opencontainers.image.documentation="https://github.com/Sudo-Ivan/Sonarr" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${REVISION}" \
+      org.opencontainers.image.vendor="Sudo-Ivan" \
+      org.opencontainers.image.licenses="GPL-3.0" \
+      org.opencontainers.image.base.name="mcr.microsoft.com/dotnet/runtime-deps:10.0-noble-chiseled-extra"
 
 ENV XDG_CONFIG_HOME=/config/.config \
     SONARR__BRANCH__NAME=multi-season-support \
     SONARR__AUTH__REQUIRED=DisabledForLocalAddresses \
     COMPlus_EnableDiagnostics=0
 
-RUN mkdir -p /config && chown app:app /config
-
 WORKDIR /app/sonarr/bin
 COPY --from=backend /app/bin/ /app/sonarr/bin/
+COPY --from=backend --chown=1000:1000 /config /config
 COPY --from=ui /build/_output/UI/ /app/sonarr/bin/UI/
 
-USER app
+USER 1000
 VOLUME /config
 EXPOSE 8989
 
