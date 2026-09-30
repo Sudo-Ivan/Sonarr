@@ -86,13 +86,17 @@ jobs:
       contents: read        # read repo source for the image build
       packages: write       # push the per-arch image digest to GHCR
       id-token: write       # keyless provenance and signing identity
-    env:
-      REGISTRY_IMAGE: ghcr.io/${{ github.repository_owner }}/sonarr
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      - name: Normalize image name
+        id: image
+        run: |
+          echo "REGISTRY_IMAGE=${REGISTRY_IMAGE,,}" >> "$GITHUB_ENV"
+          echo "image=${REGISTRY_IMAGE,,}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
@@ -119,7 +123,7 @@ jobs:
           build-args: |
             VERSION=${{ github.ref_name }}
             REVISION=${{ github.sha }}
-          tags: ${{ env.REGISTRY_IMAGE }}
+          tags: ${{ steps.image.outputs.image }}
           outputs: type=image,name-canonical=true,push-by-digest=true
 
       - name: Export digest
@@ -146,13 +150,17 @@ jobs:
       packages: write         # push the merged manifest and signature
       id-token: write         # keyless cosign signing
       security-events: write  # upload trivy SARIF to code scanning
-    env:
-      REGISTRY_IMAGE: ghcr.io/${{ github.repository_owner }}/sonarr
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      - name: Normalize image name
+        id: image
+        run: |
+          echo "REGISTRY_IMAGE=${REGISTRY_IMAGE,,}" >> "$GITHUB_ENV"
+          echo "image=${REGISTRY_IMAGE,,}" >> "$GITHUB_OUTPUT"
 
       - name: Download digests
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -175,7 +183,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
-          images: ${{ env.REGISTRY_IMAGE }}
+          images: ${{ steps.image.outputs.image }}
           tags: |
             type=raw,value=latest
             type=ref,event=branch
@@ -203,6 +211,38 @@ jobs:
         env:
           IMAGE_DIGEST: ${{ steps.digest.outputs.digest }}
         run: cosign sign --yes "${REGISTRY_IMAGE}@sha256:${IMAGE_DIGEST}"
+
+      - name: Generate SBOM with Syft
+        uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
+        with:
+          image: ${{ steps.image.outputs.image }}:latest
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          format: spdx-json
+          artifact-name: sbom-${{ github.sha }}
+          output-file: sbom.spdx.json
+          upload-release-assets: false
+
+      - name: Attest SBOM
+        run: cosign attest --yes --type spdxjson --predicate sbom.spdx.json "${REGISTRY_IMAGE}:latest"
+
+      - name: Scan image with Grype
+        id: grype
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: ${{ steps.image.outputs.image }}:latest
+          fail-build: false
+          severity-cutoff: high
+          only-fixed: true
+          output-format: sarif
+          vex: openvex.json
+
+      - name: Upload Grype results
+        uses: github/codeql-action/upload-sarif@2892aa5e19bbd11bc0cff5427e3b750a04d9e3c2 # v4.38.2
+        with:
+          sarif_file: ${{ steps.grype.outputs.sarif }}
+          category: grype
+          wait-for-processing: true
 
       - name: Install trivy
         uses: aquasecurity/setup-trivy@81e514348e19b6112ce2a7e3ecbafe19c1e1f567 # v0.3.1
