@@ -91,7 +91,7 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
 
             var items = seriesFiles.Select(episodeFile => MapItem(episodeFile, series, directoryInfo.Name, episodes)).ToList();
 
-            if (!seasonNumber.HasValue)
+            if (!seasonNumber.HasValue && directoryInfo.Exists)
             {
                 var mediaFiles = _diskScanService.FilterPaths(series.Path, _diskScanService.GetVideoFiles(series.Path)).ToList();
                 var unmappedFiles = MediaFileService.FilterExistingFiles(mediaFiles, seriesFiles, series);
@@ -106,7 +106,7 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
                         Series = series,
                         SeasonNumber = null,
                         Episodes = new List<Episode>(),
-                        ReleaseGroup = string.Empty,
+                        ReleaseGroup = null,
                         Quality = new QualityModel(Quality.Unknown),
                         Languages = new List<Language> { Language.Unknown },
                         Size = _diskProvider.GetFileSize(file),
@@ -123,7 +123,7 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
             {
                 var trackedDownload = _trackedDownloadService.Find(downloadId);
 
-                if (trackedDownload == null)
+                if (trackedDownload?.ImportItem == null)
                 {
                     return new List<ManualImportItem>();
                 }
@@ -162,9 +162,7 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
             {
                 var downloadClientItem = GetTrackedDownload(downloadId)?.DownloadItem;
                 var episodes = _episodeService.GetEpisodes(episodeIds);
-                var finalReleaseGroup = releaseGroup.IsNullOrWhiteSpace()
-                    ? Parser.ReleaseGroupParser.ParseReleaseGroup(path)
-                    : releaseGroup;
+                var finalReleaseGroup = releaseGroup ?? Parser.ReleaseGroupParser.ParseReleaseGroup(path);
                 var finalQuality = quality.Quality == Quality.Unknown ? QualityParser.ParseQuality(path) : quality;
                 var finalLanguages =
                     languages?.Count <= 1 && (languages?.SingleOrDefault() ?? Language.Unknown) == Language.Unknown
@@ -224,7 +222,7 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
                     SceneSource = SceneSource(series, rootFolder),
                     ExistingFile = series.Path.IsParentPath(path),
                     Size = _diskProvider.GetFileSize(path),
-                    ReleaseGroup = releaseGroup.IsNullOrWhiteSpace() ? Parser.ReleaseGroupParser.ParseReleaseGroup(path) : releaseGroup,
+                    ReleaseGroup = releaseGroup ?? Parser.ReleaseGroupParser.ParseReleaseGroup(path),
                     Languages = languages?.Count <= 1 && (languages?.SingleOrDefault() ?? Language.Unknown) == Language.Unknown ? LanguageParser.ParseLanguages(path) : languages,
                     Quality = quality.Quality == Quality.Unknown ? QualityParser.ParseQuality(path) : quality,
                     IndexerFlags = (IndexerFlags)indexerFlags,
@@ -406,7 +404,7 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
 
             return new ParsedEpisodeInfo
             {
-                SeasonNumbers = new[] { seasonNumber },
+                SeasonNumbers = [seasonNumber],
                 FullSeason = true
             };
         }
@@ -479,9 +477,9 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
             // parsed from a season named folder, e.g. 'Season 3' or 'Show.Name.S03'
             if (!item.SeasonNumber.HasValue &&
                 decision.LocalEpisode.FolderEpisodeInfo is { IsMultiSeason: false } folderInfo &&
-                folderInfo.SeasonNumber.HasValue)
+                folderInfo.SeasonNumbers.Count > 0)
             {
-                item.SeasonNumber = folderInfo.SeasonNumber;
+                item.SeasonNumber = folderInfo.SeasonNumbers[0];
             }
 
             item.ReleaseGroup = decision.LocalEpisode.ReleaseGroup;
@@ -671,9 +669,10 @@ namespace NzbDrone.Core.MediaFiles.EpisodeImport.Manual
                 if (allEpisodesImported)
                 {
                     var episodeFiles = importedResults.Select(i => i.EpisodeFile).ToList();
+                    var importedEpisodes = importedResults.SelectMany(i => i.ImportDecision.LocalEpisode.Episodes).ToList();
 
                     trackedDownload.State = TrackedDownloadState.Imported;
-                    _eventAggregator.PublishEvent(new DownloadCompletedEvent(trackedDownload, importedSeries.Id, episodeFiles, importedResults.First().ImportDecision.LocalEpisode.Release));
+                    _eventAggregator.PublishEvent(new DownloadCompletedEvent(trackedDownload, importedSeries, importedEpisodes, episodeFiles, importedResults.First().ImportDecision.LocalEpisode.Release));
                 }
             }
         }

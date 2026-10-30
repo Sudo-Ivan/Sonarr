@@ -1,6 +1,5 @@
 using System.Linq;
 using NLog;
-using NzbDrone.Core.DataAugmentation.Scene;
 using NzbDrone.Core.IndexerSearch.Definitions;
 using NzbDrone.Core.Parser.Model;
 
@@ -9,12 +8,10 @@ namespace NzbDrone.Core.DecisionEngine.Specifications.Search
     public class SeasonMatchSpecification : IDownloadDecisionEngineSpecification
     {
         private readonly Logger _logger;
-        private readonly ISceneMappingService _sceneMappingService;
 
-        public SeasonMatchSpecification(ISceneMappingService sceneMappingService, Logger logger)
+        public SeasonMatchSpecification(Logger logger)
         {
             _logger = logger;
-            _sceneMappingService = sceneMappingService;
         }
 
         public SpecificationPriority Priority => SpecificationPriority.Default;
@@ -34,16 +31,18 @@ namespace NzbDrone.Core.DecisionEngine.Specifications.Search
                 return DownloadSpecDecision.Accept();
             }
 
+            var seasonNumbers = remoteEpisode.ParsedEpisodeInfo.SeasonNumbers;
+
             if (remoteEpisode.ParsedEpisodeInfo.IsMultiSeason)
             {
                 var coveredSeasonNumbers = remoteEpisode.MappedSeasonNumbers;
 
                 if (coveredSeasonNumbers.Length == 0)
                 {
-                    var offset = (remoteEpisode.MappedSeasonNumber ?? remoteEpisode.ParsedEpisodeInfo.SeasonNumber ?? 0) -
-                                 (remoteEpisode.ParsedEpisodeInfo.SeasonNumber ?? 0);
+                    var firstSeasonNumber = seasonNumbers.First();
+                    var offset = (remoteEpisode.MappedSeasonNumber ?? firstSeasonNumber) - firstSeasonNumber;
 
-                    coveredSeasonNumbers = remoteEpisode.ParsedEpisodeInfo.SeasonNumbers.Select(s => s + offset).ToArray();
+                    coveredSeasonNumbers = seasonNumbers.Select(s => s + offset).ToArray();
                 }
 
                 if (!coveredSeasonNumbers.Contains(singleEpisodeSpec.SeasonNumber))
@@ -55,9 +54,11 @@ namespace NzbDrone.Core.DecisionEngine.Specifications.Search
                 return DownloadSpecDecision.Accept();
             }
 
-            var seasonNumber = remoteEpisode.ParsedEpisodeInfo.SeasonNumber ?? remoteEpisode.MappedSeasonNumber;
+            var matches = seasonNumbers.Count > 0
+                ? seasonNumbers.Contains(singleEpisodeSpec.SeasonNumber)
+                : singleEpisodeSpec.SeasonNumber == remoteEpisode.MappedSeasonNumber;
 
-            if (singleEpisodeSpec.SeasonNumber != seasonNumber)
+            if (!matches)
             {
                 _logger.Debug("Season number does not match searched season number, skipping.");
                 return DownloadSpecDecision.Reject(DownloadRejectionReason.WrongSeason, "Wrong season");

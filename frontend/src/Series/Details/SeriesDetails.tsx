@@ -1,6 +1,13 @@
 import classNames from 'classnames';
 import moment from 'moment-timezone';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import CommandNames from 'Commands/CommandNames';
 import { useCommands, useExecuteCommand } from 'Commands/useCommands';
 import Alert from 'Components/Alert';
@@ -23,14 +30,9 @@ import Tooltip from 'Components/Tooltip/Tooltip';
 import useEpisodes from 'Episode/useEpisodes';
 import useEpisodeFiles from 'EpisodeFile/useEpisodeFiles';
 import usePrevious from 'Helpers/Hooks/usePrevious';
-import {
-  icons,
-  kinds,
-  sizes,
-  sortDirections,
-  tooltipPositions,
-} from 'Helpers/Props';
+import { icons, kinds, sizes, tooltipPositions } from 'Helpers/Props';
 import InteractiveImportModal from 'InteractiveImport/InteractiveImportModal';
+import { manageEpisodesOptionsStore } from 'InteractiveImport/interactiveImportOptionsStore';
 import useCountryName from 'Internationalization/useCountryName';
 import OrganizePreviewModal from 'Organize/OrganizePreviewModal';
 import DeleteSeriesModal from 'Series/Delete/DeleteSeriesModal';
@@ -58,6 +60,7 @@ import translate from 'Utilities/String/translate';
 import toggleSelected from 'Utilities/Table/toggleSelected';
 import SeriesAlternateTitles from './SeriesAlternateTitles';
 import SeriesDetailsLinks from './SeriesDetailsLinks';
+import SeriesDetailsPath from './SeriesDetailsPath';
 import SeriesDetailsProvider from './SeriesDetailsProvider';
 import SeriesDetailsSeason from './SeriesDetailsSeason';
 import SeriesProgressLabel from './SeriesProgressLabel';
@@ -386,6 +389,29 @@ function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     }
   }, [isRefreshing, wasRefreshing, isRenaming, wasRenaming, populate]);
 
+  const overviewRef = useRef<HTMLParagraphElement>(null);
+  const [isOverviewClamped, setIsOverviewClamped] = useState(false);
+
+  useLayoutEffect(() => {
+    const element = overviewRef.current;
+
+    if (!element) {
+      return;
+    }
+
+    const compute = () =>
+      setIsOverviewClamped(
+        !isOverviewExpanded && element.scrollHeight > element.clientHeight
+      );
+
+    compute();
+
+    const observer = new ResizeObserver(compute);
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, [series?.overview, isOverviewExpanded]);
+
   let expandIcon = icons.EXPAND_INDETERMINATE;
 
   if (expandedState.allExpanded) {
@@ -407,14 +433,18 @@ function SeriesDetails({ seriesId }: SeriesDetailsProps) {
     runtime,
     ratings,
     path,
+    pendingPath,
     statistics = {} as Statistics,
     qualityProfileId,
+    language,
     status,
     network,
     originalLanguage,
     overview,
     images,
     seasons,
+    seasonType,
+    seasonTypes,
     genres,
     tags,
     year,
@@ -636,11 +666,7 @@ function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                   ) : null}
 
                   {ratings.value ? (
-                    <HeartRating
-                      rating={ratings.value}
-                      votes={ratings.votes}
-                      iconSize={14}
-                    />
+                    <HeartRating rating={ratings.value} votes={ratings.votes} />
                   ) : null}
 
                   {genres.length ? (
@@ -762,6 +788,29 @@ function SeriesDetails({ seriesId }: SeriesDetailsProps) {
 
                     <Label
                       className={styles.detailsLabel}
+                      title={translate('SeasonType')}
+                      size={sizes.LARGE}
+                      icon={icons.SEASON_TYPE}
+                    >
+                      <span className={styles.seasonTypeName}>
+                        {seasonTypes.find((s) => s.type === seasonType)?.name ??
+                          seasonType}
+                      </span>
+                    </Label>
+
+                    <Label
+                      className={styles.detailsLabel}
+                      title={translate('Language')}
+                      size={sizes.LARGE}
+                      icon={icons.LANGUAGE}
+                    >
+                      <span className={styles.languageName}>
+                        {language.name}
+                      </span>
+                    </Label>
+
+                    <Label
+                      className={styles.detailsLabel}
                       title={statusDetails.message}
                       size={sizes.LARGE}
                       kind={status === 'deleted' ? kinds.INVERSE : undefined}
@@ -812,10 +861,7 @@ function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                 </div>
 
                 <div className={styles.heroFooter}>
-                  <div className={styles.pathLine}>
-                    <Icon name={icons.FOLDER} size={14} />
-                    <span>{path}</span>
-                  </div>
+                  <SeriesDetailsPath path={path} pendingPath={pendingPath} />
 
                   <MetadataAttribution />
                 </div>
@@ -833,6 +879,7 @@ function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                 </div>
 
                 <p
+                  ref={overviewRef}
                   className={classNames(
                     styles.overview,
                     !isOverviewExpanded && styles.overviewClamped
@@ -841,12 +888,14 @@ function SeriesDetails({ seriesId }: SeriesDetailsProps) {
                   {overview}
                 </p>
 
-                <Link
-                  className={styles.overviewToggle}
-                  onPress={handleToggleOverview}
-                >
-                  {isOverviewExpanded ? translate('Less') : translate('More')}
-                </Link>
+                {isOverviewClamped || isOverviewExpanded ? (
+                  <Link
+                    className={styles.overviewToggle}
+                    onPress={handleToggleOverview}
+                  >
+                    {isOverviewExpanded ? translate('Less') : translate('More')}
+                  </Link>
+                ) : null}
               </section>
             ) : null}
 
@@ -903,8 +952,7 @@ function SeriesDetails({ seriesId }: SeriesDetailsProps) {
             seriesId={seriesId}
             title={title}
             folder={path}
-            initialSortKey="relativePath"
-            initialSortDirection={sortDirections.DESCENDING}
+            optionsStore={manageEpisodesOptionsStore}
             showSeries={false}
             allowSeriesChange={false}
             showDelete={true}

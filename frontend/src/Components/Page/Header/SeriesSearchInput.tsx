@@ -3,13 +3,16 @@ import React, {
   FormEvent,
   KeyboardEvent,
   SyntheticEvent,
+  TouchEvent,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react';
-import Autosuggest from 'react-autosuggest';
+import Autosuggest, {
+  RenderSuggestionsContainerParams,
+} from 'react-autosuggest';
 import { useNavigate } from 'react-router-dom';
 import { useDebouncedCallback } from 'use-debounce';
 import Icon from 'Components/Icon';
@@ -43,6 +46,7 @@ export interface SuggestedSeries
     | 'sortTitle'
     | 'images'
     | 'alternateTitles'
+    | 'translations'
     | 'tvdbId'
     | 'tvMazeId'
     | 'imdbId'
@@ -77,6 +81,7 @@ function useSeriesSuggestions(tagList: ReadonlyArray<Tag>) {
         sortTitle,
         images,
         alternateTitles = [],
+        translations = [],
         tvdbId,
         tvMazeId,
         imdbId,
@@ -90,6 +95,7 @@ function useSeriesSuggestions(tagList: ReadonlyArray<Tag>) {
         sortTitle,
         images,
         alternateTitles,
+        translations,
         tvdbId,
         tvMazeId,
         imdbId,
@@ -165,15 +171,10 @@ function SeriesSearchInput() {
         setSuggestions(suggestions);
         setRequestLoading(true);
 
-        const payload = {
-          value: requestValue,
-          series,
-        };
-
-        worker.current?.postMessage(payload);
+        worker.current?.postMessage({ value: requestValue.current });
       }
     },
-    [series]
+    []
   );
 
   const requestSuggestions = useDebouncedCallback((value: string) => {
@@ -185,12 +186,7 @@ function SeriesSearchInput() {
     setRequestLoading(true);
 
     if (!requestLoading) {
-      const payload = {
-        value,
-        series,
-      };
-
-      worker.current?.postMessage(payload);
+      worker.current?.postMessage({ value });
     }
   }, 250);
 
@@ -224,6 +220,21 @@ function SeriesSearchInput() {
       </div>
     );
   }, []);
+
+  const renderSuggestionsContainer = useCallback(
+    ({ containerProps, children }: RenderSuggestionsContainerParams) => {
+      const { key, ...otherContainerProps } = containerProps;
+
+      return (
+        <div className={children ? styles.dropdown : undefined}>
+          <div key={key} {...otherContainerProps}>
+            {children}
+          </div>
+        </div>
+      );
+    },
+    []
+  );
 
   const getSuggestionValue = useCallback(({ title }: { title: string }) => {
     return title;
@@ -322,6 +333,17 @@ function SeriesSearchInput() {
     reset();
   }, [reset]);
 
+  const handleTouchEnd = useCallback((event: TouchEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+
+    if (!event.cancelable || document.activeElement === input) {
+      return;
+    }
+
+    event.preventDefault();
+    input.focus({ preventScroll: true });
+  }, []);
+
   const handleSuggestionsFetchRequested = useCallback(
     ({ value }: { value: string }) => {
       isLoading.current = true;
@@ -362,11 +384,11 @@ function SeriesSearchInput() {
     onChange: handleChange,
     onKeyDown: handleKeyDown,
     onBlur: handleBlur,
+    onTouchEnd: handleTouchEnd,
   };
 
   const theme = {
     container: styles.container,
-    containerOpen: styles.containerOpen,
     suggestionsContainer: styles.seriesContainer,
     suggestionsList: styles.list,
     suggestion: styles.listItem,
@@ -374,7 +396,9 @@ function SeriesSearchInput() {
   };
 
   useEffect(() => {
-    worker.current = new Worker(new URL('./fuse.worker.ts', import.meta.url));
+    worker.current = new Worker(new URL('./fuse.worker.ts', import.meta.url), {
+      type: 'module',
+    });
 
     return () => {
       if (worker.current) {
@@ -383,6 +407,10 @@ function SeriesSearchInput() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    worker.current?.postMessage({ series });
+  }, [series]);
 
   useEffect(() => {
     worker.current?.addEventListener(
@@ -424,6 +452,7 @@ function SeriesSearchInput() {
           suggestions={suggestionGroups}
           getSectionSuggestions={getSectionSuggestions}
           renderSectionTitle={renderSectionTitle}
+          renderSuggestionsContainer={renderSuggestionsContainer}
           getSuggestionValue={getSuggestionValue}
           renderSuggestion={renderSuggestion}
           onSuggestionSelected={handleSuggestionSelected}

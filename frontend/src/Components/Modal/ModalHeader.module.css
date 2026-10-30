@@ -11,3 +11,15 @@
   font-family: var(--defaultFontFamily);
   line-height: 1.25;
 }
+
+.subtitle {
+  margin-left: 12px;
+  color: var(--inkMuted);
+  font-weight: 400;
+}
+
+@media (--breakpointSmall) {
+  .modalHeader {
+    padding-left: 15px;
+  }
+}

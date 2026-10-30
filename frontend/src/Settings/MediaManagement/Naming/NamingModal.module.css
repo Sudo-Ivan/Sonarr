@@ -68,11 +68,10 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 
-  column-gap: 16px;
-  row-gap: 2px;
+  gap: 2px 16px;
 }
 
-@media only screen and (max-width: 768px) {
+@media (--breakpointSmall) {
   .groups {
     grid-template-columns: 1fr;
   }

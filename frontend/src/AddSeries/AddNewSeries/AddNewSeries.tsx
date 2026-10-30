@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import TextInput from 'Components/Form/TextInput';
 import Icon from 'Components/Icon';
 import Button from 'Components/Link/Button';
+import IconButton from 'Components/Link/IconButton';
 import Link from 'Components/Link/Link';
 import LoadingIndicator from 'Components/Loading/LoadingIndicator';
 import PageContent from 'Components/Page/PageContent';
@@ -10,7 +11,9 @@ import PageHeading from 'Components/Page/PageHeading';
 import useDebounce from 'Helpers/Hooks/useDebounce';
 import useQueryParams from 'Helpers/Hooks/useQueryParams';
 import { icons, kinds } from 'Helpers/Props';
+import { usePreferredMetadataLanguage } from 'Language/useLanguages';
 import { useHasSeries } from 'Series/useSeries';
+import MetadataSettingsModal from 'Settings/MetadataSource/MetadataSettingsModal';
 import { InputChanged } from 'typings/inputs';
 import getErrorMessage from 'Utilities/Object/getErrorMessage';
 import translate from 'Utilities/String/translate';
@@ -21,9 +24,12 @@ import styles from './AddNewSeries.module.css';
 function AddNewSeries() {
   const { term: initialTerm = '' } = useQueryParams<{ term: string }>();
   const hasSeries = useHasSeries();
+  const language = usePreferredMetadataLanguage();
   const [term, setTerm] = useState(initialTerm);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [isFetching, setIsFetching] = useState(false);
+  const [isMetadataSettingsModalOpen, setIsMetadataSettingsModalOpen] =
+    useState(false);
   const query = useDebounce(term, term ? 300 : 0);
 
   const handleSearchInputChange = useCallback(
@@ -34,13 +40,25 @@ function AddNewSeries() {
     []
   );
 
+  const handleMetadataSettingsPress = useCallback(() => {
+    setIsMetadataSettingsModalOpen(true);
+  }, []);
+
+  const handleMetadataSettingsModalClose = useCallback(() => {
+    setIsMetadataSettingsModalOpen(false);
+  }, []);
+
   const handleClearSeriesLookupPress = useCallback(() => {
     setTerm('');
     setIsFetching(false);
     searchInputRef.current?.focus();
   }, []);
 
-  const { isFetching: isFetchingApi, error, data } = useLookupSeries(query);
+  const {
+    isFetching: isFetchingApi,
+    error,
+    data,
+  } = useLookupSeries(query, language);
 
   useEffect(() => {
     setIsFetching(isFetchingApi);
@@ -56,6 +74,11 @@ function AddNewSeries() {
         <PageHeading
           scope={translate('Media')}
           title={translate('AddNewSeries')}
+          actions={
+            <Button onPress={handleMetadataSettingsPress}>
+              {translate('MetadataSettings')}
+            </Button>
+          }
         />
 
         <div className={styles.searchSticky}>
@@ -73,12 +96,13 @@ function AddNewSeries() {
             />
 
             {term ? (
-              <Button
+              <IconButton
                 className={styles.clearLookupButton}
+                name={icons.REMOVE}
+                title={translate('ClearSeriesSearch')}
+                aria-label={translate('ClearSeriesSearch')}
                 onPress={handleClearSeriesLookupPress}
-              >
-                <Icon name={icons.REMOVE} size={14} />
-              </Button>
+              />
             ) : null}
           </div>
         </div>
@@ -149,6 +173,11 @@ function AddNewSeries() {
             )}
           </div>
         )}
+
+        <MetadataSettingsModal
+          isOpen={isMetadataSettingsModalOpen}
+          onModalClose={handleMetadataSettingsModalClose}
+        />
       </PageContentBody>
     </PageContent>
   );

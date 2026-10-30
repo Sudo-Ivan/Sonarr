@@ -5,6 +5,10 @@ import SettingsCardAction from 'Components/SettingsCard/SettingsCardAction';
 import SettingsCardStatus from 'Components/SettingsCard/SettingsCardStatus';
 import TagList from 'Components/TagList';
 import { icons, kinds } from 'Helpers/Props';
+import {
+  getProviderTestStatusLabel,
+  ProviderTestStatus,
+} from 'Settings/ProviderTestAllResult';
 import { useTagList } from 'Tags/useTags';
 import formatShortTimeSpan from 'Utilities/Date/formatShortTimeSpan';
 import translate from 'Utilities/String/translate';
@@ -17,7 +21,7 @@ interface ImportListProps {
   enableAutomaticAdd: boolean;
   minRefreshInterval: string;
   tags: number[];
-  tagExisting: boolean;
+  testStatus?: ProviderTestStatus;
   onCloneImportListPress: (id: number) => void;
 }
 
@@ -27,6 +31,7 @@ function ImportList({
   enableAutomaticAdd,
   minRefreshInterval,
   tags,
+  testStatus,
   onCloneImportListPress,
 }: ImportListProps) {
   const tagList = useTagList();
@@ -63,10 +68,21 @@ function ImportList({
     onCloneImportListPress(id);
   }, [id, onCloneImportListPress]);
 
+  const testStatusLabel = testStatus
+    ? getProviderTestStatusLabel(testStatus)
+    : undefined;
+
   return (
     <SettingsCard
       name={name}
-      aria-label={translate('EditImportListName', { name })}
+      aria-label={
+        testStatusLabel
+          ? translate('EditImportListNameWithTestStatus', {
+              name,
+              testStatus: testStatusLabel,
+            })
+          : translate('EditImportListName', { name })
+      }
       actions={
         <SettingsCardAction
           title={translate('CloneImportList')}
@@ -84,6 +100,7 @@ function ImportList({
           <>
             {translate('Refresh')}: {formatShortTimeSpan(minRefreshInterval)}
           </>,
+          testStatusLabel,
         ]}
       />
 

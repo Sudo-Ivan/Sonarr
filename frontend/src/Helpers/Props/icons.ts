@@ -23,6 +23,7 @@ import {
   Circle,
   CircleAlert,
   CircleArrowDown,
+  CircleArrowUp,
   CircleCheck,
   CircleChevronLeft,
   CircleChevronRight,
@@ -70,6 +71,7 @@ import {
   LayoutList,
   ListChecks,
   ListFilter,
+  ListOrdered,
   Loader,
   LogOut,
   Menu,
@@ -205,6 +207,7 @@ export const REORDER = Menu;
 export const ROOT_FOLDER = FolderTree;
 export const RSS = Rss;
 export const SAVE = Save;
+export const SEASON_TYPE = ListOrdered;
 export const SCENE_MAPPING = Network;
 export const SCHEDULED = Clock;
 export const SCORE = UserPlus;
@@ -233,6 +236,7 @@ export const UNGROUP = Ungroup;
 export const UNKNOWN = CircleHelp;
 export const UNMONITORED = BookmarkX;
 export const UPDATE = RefreshCcw;
+export const UPGRADE = CircleArrowUp;
 export const UNSAVED_SETTING = CircleDot;
 export const VIEW = Eye;
 export const WARNING = TriangleAlert;

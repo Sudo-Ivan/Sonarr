@@ -106,7 +106,7 @@ function EditIndexerModalContent({
 
   return (
     <ModalContent onModalClose={onModalClose}>
-      <ModalHeader>
+      <ModalHeader subtitle={id ? name.previousValue ?? name.value : undefined}>
         {id
           ? translate('EditIndexerImplementation', { implementationName })
           : translate('AddIndexerImplementation', { implementationName })}
@@ -204,7 +204,6 @@ function EditIndexerModalContent({
                 advancedSettings={showAdvancedSettings}
                 provider="indexer"
                 providerData={item}
-                layout="row"
                 {...field}
                 onChange={handleFieldChange}
               />

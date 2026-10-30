@@ -43,7 +43,11 @@ function PageHeader() {
   return (
     <div className={styles.header}>
       <div className={styles.logoContainer}>
-        <Link className={styles.logoLink} to="/" aria-label={translate('Home')}>
+        <Link
+          className={styles.logoLink}
+          to="/series"
+          aria-label={translate('Home')}
+        >
           <img
             className={styles.logo}
             src={`${window.Sonarr.urlBase}/Content/Images/logo.svg`}
@@ -56,6 +60,7 @@ function PageHeader() {
       <div className={styles.sidebarToggleContainer}>
         <IconButton
           id="sidebar-toggle-button"
+          className={styles.sidebarToggle}
           name={icons.NAVBAR_COLLAPSE}
           aria-label={translate('Menu')}
           onPress={handleSidebarToggle}

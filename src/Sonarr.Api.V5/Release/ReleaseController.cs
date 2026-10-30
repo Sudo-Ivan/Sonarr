@@ -202,6 +202,11 @@ public class ReleaseController : RestController<ReleaseResource>
             return TypedResults.Ok(await GetSeasonReleases(seriesId.Value, seasonNumber.Value));
         }
 
+        if (seriesId.HasValue || seasonNumber.HasValue)
+        {
+            throw new NzbDroneClientException(HttpStatusCode.BadRequest, "seriesId and seasonNumber must be provided together");
+        }
+
         return TypedResults.Ok(await GetRss());
     }
 

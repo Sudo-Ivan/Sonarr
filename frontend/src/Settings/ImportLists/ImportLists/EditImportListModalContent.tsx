@@ -26,6 +26,7 @@ import { SelectedSchema } from 'Settings/useProviderSchema';
 import { EnhancedSelectInputChanged, InputChanged } from 'typings/inputs';
 import formatShortTimeSpan from 'Utilities/Date/formatShortTimeSpan';
 import translate from 'Utilities/String/translate';
+import tagExistingOptions from './tagExistingOptions';
 import { useManageImportList } from './useImportLists';
 import styles from './EditImportListModalContent.module.css';
 
@@ -72,6 +73,7 @@ function EditImportListModalContent({
     monitorNewItems,
     qualityProfileId,
     seriesType,
+    language,
     seasonFolder,
     tags,
     tagExisting,
@@ -113,7 +115,7 @@ function EditImportListModalContent({
 
   return (
     <ModalContent onModalClose={onModalClose}>
-      <ModalHeader>
+      <ModalHeader subtitle={id ? name.previousValue ?? name.value : undefined}>
         {id
           ? translate('EditImportListImplementation', { implementationName })
           : translate('AddImportListImplementation', { implementationName })}
@@ -240,6 +242,18 @@ function EditImportListModalContent({
             </FormRow>
 
             <FormRow>
+              <FormLabel>{translate('Language')}</FormLabel>
+              <FormInputHelpText text={translate('ListLanguageHelpText')} />
+              <FormInput
+                type={inputTypes.LANGUAGE_SELECT}
+                name="language"
+                includeAny={false}
+                onChange={handleInputChange}
+                {...language}
+              />
+            </FormRow>
+
+            <FormRow>
               <FormLabel>
                 {translate('SeriesType')}
 
@@ -280,7 +294,6 @@ function EditImportListModalContent({
                 advancedSettings={showAdvancedSettings}
                 provider="importList"
                 providerData={item}
-                layout="row"
                 {...field}
                 onChange={handleFieldChange}
               />
@@ -301,9 +314,14 @@ function EditImportListModalContent({
           <FormRow>
             <FormLabel>{translate('TagExisting')}</FormLabel>
             <FormInputHelpText text={translate('TagExistingHelpText')} />
+            <FormInputHelpText
+              text={translate('TagExistingHelpTextWarning')}
+              isWarning={true}
+            />
             <FormInput
-              type={inputTypes.CHECK}
+              type={inputTypes.SELECT}
               name="tagExisting"
+              values={tagExistingOptions}
               {...tagExisting}
               onChange={handleInputChange}
             />

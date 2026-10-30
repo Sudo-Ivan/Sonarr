@@ -38,7 +38,7 @@ namespace Sonarr.Http.Authentication
 
         [HttpGet("login/sso")]
         [ProducesResponseType(StatusCodes.Status302Found)]
-        public Results<RedirectHttpResult, ChallengeHttpResult> LoginSso([FromQuery] string returnUrl = null)
+        public Results<RedirectHttpResult, ChallengeHttpResult> LoginSso([FromQuery] string returnUrl = null, [FromQuery] bool rememberMe = false)
         {
             if (_configFileProvider.AuthenticationMethod != AuthenticationType.Oidc)
             {
@@ -53,7 +53,11 @@ namespace Sonarr.Http.Authentication
             }
 
             return TypedResults.Challenge(
-                new AuthenticationProperties { RedirectUri = GetRedirectUrl(returnUrl) },
+                new AuthenticationProperties
+                {
+                    RedirectUri = GetRedirectUrl(returnUrl),
+                    IsPersistent = rememberMe
+                },
                 [nameof(AuthenticationType.Oidc)]);
         }
 
@@ -66,6 +70,15 @@ namespace Sonarr.Http.Authentication
 
             if (user == null)
             {
+                var lockoutEndTime = _authService.GetLockoutEndTime(HttpContext.Request);
+
+                if (lockoutEndTime.HasValue)
+                {
+                    var lockoutUntil = new DateTimeOffset(lockoutEndTime.Value, TimeSpan.Zero).ToUnixTimeMilliseconds();
+
+                    return TypedResults.Redirect($"~/login?returnUrl={returnUrl}&loginFailed=true&lockoutUntil={lockoutUntil}");
+                }
+
                 return TypedResults.Redirect($"~/login?returnUrl={returnUrl}&loginFailed=true");
             }
 
@@ -78,7 +91,7 @@ namespace Sonarr.Http.Authentication
 
             var authProperties = new AuthenticationProperties
             {
-                IsPersistent = resource.RememberMe == "on"
+                IsPersistent = resource.RememberMe
             };
 
             try
@@ -100,6 +113,39 @@ namespace Sonarr.Http.Authentication
             }
 
             return TypedResults.Redirect(GetRedirectUrl(returnUrl));
+        }
+
+        [HttpPost("reset-password/request")]
+        [ProducesResponseType(StatusCodes.Status302Found)]
+        public RedirectHttpResult RequestPasswordReset()
+        {
+            var token = _authService.RequestPasswordReset(HttpContext.Request);
+
+            if (token == null)
+            {
+                return TypedResults.Redirect("~/login?resetPassword=true&tokenSent=true&tokenUnavailable=true");
+            }
+
+            return TypedResults.Redirect("~/login?resetPassword=true&tokenSent=true");
+        }
+
+        [HttpPost("reset-password")]
+        [ProducesResponseType(StatusCodes.Status302Found)]
+        public RedirectHttpResult ResetPassword([FromForm] ResetPasswordResource resource)
+        {
+            if (resource.Username.IsNullOrWhiteSpace() ||
+                resource.Password.IsNullOrWhiteSpace() ||
+                resource.Password != resource.PasswordConfirmation)
+            {
+                return TypedResults.Redirect("~/login?resetPassword=true&tokenSent=true&resetInvalid=true");
+            }
+
+            if (!_authService.ResetPassword(HttpContext.Request, resource.Token, resource.Username, resource.Password))
+            {
+                return TypedResults.Redirect("~/login?resetPassword=true&tokenSent=true&resetFailed=true");
+            }
+
+            return TypedResults.Redirect("~/login?passwordReset=true");
         }
 
         [HttpGet("logout")]

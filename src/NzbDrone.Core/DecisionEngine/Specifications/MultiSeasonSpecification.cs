@@ -32,7 +32,7 @@ namespace NzbDrone.Core.DecisionEngine.Specifications
             }
 
             var coveredSeasonNumbers = (subject.MappedSeasonNumbers.Any()
-                                            ? subject.MappedSeasonNumbers
+                                            ? subject.MappedSeasonNumbers.AsEnumerable()
                                             : subject.ParsedEpisodeInfo.SeasonNumbers)
                                        .Where(n => n > 0)
                                        .Distinct()

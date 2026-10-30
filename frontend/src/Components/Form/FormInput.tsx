@@ -10,6 +10,7 @@ import FloatInput, { FloatInputProps } from './FloatInput';
 import { FormInputButtonProps } from './FormInputButton';
 import { FormInputGroupProvider } from './FormInputGroupContext';
 import FormInputHelpText from './FormInputHelpText';
+import { useFormRow } from './FormRowContext';
 import KeyValueListInput, { KeyValueListInputProps } from './KeyValueListInput';
 import NumberInput, { NumberInputProps } from './NumberInput';
 import OAuthInput, { OAuthInputProps } from './OAuthInput';
@@ -45,6 +46,9 @@ import QualityProfileSelectInput, {
 import RootFolderSelectInput, {
   RootFolderSelectInputProps,
 } from './Select/RootFolderSelectInput';
+import SeasonTypeSelectInput, {
+  SeasonTypeSelectInputProps,
+} from './Select/SeasonTypeSelectInput';
 import SeriesTypeSelectInput, {
   SeriesTypeSelectInputProps,
 } from './Select/SeriesTypeSelectInput';
@@ -55,7 +59,7 @@ import TagSelectInput, { TagSelectInputProps } from './Tag/TagSelectInput';
 import TextTagInput, { TextTagInputProps } from './Tag/TextTagInput';
 import TextArea, { TextAreaProps } from './TextArea';
 import TextInput, { TextInputProps } from './TextInput';
-import styles from './FormInputGroup.module.css';
+import styles from './FormInput.module.css';
 
 const componentMap: Record<InputType, ElementType> = {
   autoComplete: AutoCompleteInput,
@@ -79,6 +83,7 @@ const componentMap: Record<InputType, ElementType> = {
   path: PathInput,
   qualityProfileSelect: QualityProfileSelectInput,
   rootFolderSelect: RootFolderSelectInput,
+  seasonTypeSelect: SeasonTypeSelectInput,
   select: EnhancedSelectInput,
   seriesTag: SeriesTagInput,
   seriesTypeSelect: SeriesTypeSelectInput,
@@ -132,6 +137,8 @@ type PickProps<V, C extends InputType> = C extends 'autoComplete'
   ? QualityProfileSelectInputProps
   : C extends 'rootFolderSelect'
   ? RootFolderSelectInputProps
+  : C extends 'seasonTypeSelect'
+  ? SeasonTypeSelectInputProps
   : C extends 'select'
   ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
     EnhancedSelectInputProps<any, V>
@@ -162,6 +169,7 @@ export type FormInputProps<V, C extends InputType> = Omit<
   'className'
 > & {
   type: C;
+  id?: string;
   className?: string;
   containerClassName?: string;
   inputClassName?: string;
@@ -177,11 +185,14 @@ export type FormInputProps<V, C extends InputType> = Omit<
 };
 
 function FormInput<T, C extends InputType>(props: FormInputProps<T, C>) {
+  const formRow = useFormRow();
   const {
     className = styles.inputGroup,
     containerClassName = styles.inputGroupContainer,
     inputClassName,
     type,
+    id = formRow?.id ?? props.name,
+    name,
     unit,
     buttons = [],
     pending,
@@ -210,12 +221,15 @@ function FormInput<T, C extends InputType>(props: FormInputProps<T, C>) {
   const checkInput = type === inputTypes.CHECK;
   const hasError = !!errors.length;
   const hasWarning = !hasError && !!warnings.length;
+  const describedBy = formRow?.descriptionIds.join(' ') || undefined;
   const buttonsArray = React.Children.toArray(buttons);
   const lastButtonIndex = buttonsArray.length - 1;
   const hasButton = !!buttonsArray.length;
 
   return (
     <FormInputGroupProvider
+      describedBy={describedBy}
+      hasError={hasError}
       setClientErrors={setClientErrors}
       setClientWarnings={setClientWarnings}
     >
@@ -232,6 +246,8 @@ function FormInput<T, C extends InputType>(props: FormInputProps<T, C>) {
           <div className={styles.inputContainer}>
             {/* @ts-expect-error - types are validated already */}
             <InputComponent
+              id={id}
+              name={name}
               className={inputClassName}
               hasError={hasError}
               hasWarning={hasWarning}
@@ -242,7 +258,7 @@ function FormInput<T, C extends InputType>(props: FormInputProps<T, C>) {
             {unit && (
               <div
                 className={
-                  type === inputTypes.NUMBER
+                  type === inputTypes.NUMBER || type === inputTypes.FLOAT
                     ? styles.inputUnitNumber
                     : styles.inputUnit
                 }

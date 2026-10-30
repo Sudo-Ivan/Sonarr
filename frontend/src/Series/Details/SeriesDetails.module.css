@@ -179,8 +179,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  column-gap: 8px;
-  row-gap: 8px;
+  gap: 8px 8px;
 }
 
 .detailsLabel {
@@ -230,6 +229,8 @@
 .qualityProfileName,
 .originalCountry,
 .originalLanguageName,
+.languageName,
+.seasonTypeName,
 .statusName,
 .network,
 .links,
@@ -249,26 +250,6 @@
   color: color-mix(in oklch, var(--seriesOverlayInk) 70%, var(--seriesOverlayBackdrop));
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
   gap: 12px;
-}
-
-.pathLine {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  min-width: 0;
-  max-width: 560px;
-  font-size: 12px;
-  gap: 7px;
-}
-
-.pathLine svg {
-  flex-shrink: 0;
-}
-
-.pathLine span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .heroFooter a {
@@ -418,5 +399,11 @@
 
   .overviewToggle {
     display: inline-block;
+  }
+
+  .heroFooter {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 6px;
   }
 }

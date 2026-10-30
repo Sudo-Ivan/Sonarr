@@ -203,7 +203,7 @@ function QueueRow(props: QueueRowProps) {
 
         if (name === 'series.sortTitle') {
           return (
-            <TableRowCell key={name}>
+            <TableRowCell key={name} className={styles.series}>
               {series ? (
                 <SeriesTitleLink
                   titleSlug={series.titleSlug}
@@ -394,7 +394,7 @@ function QueueRow(props: QueueRowProps) {
               {showInteractiveImport ? (
                 <IconButton
                   name={icons.INTERACTIVE}
-                  aria-label={translate('InteractiveSearch')}
+                  aria-label={translate('InteractiveImport')}
                   onPress={handleInteractiveImportPress}
                 />
               ) : null}

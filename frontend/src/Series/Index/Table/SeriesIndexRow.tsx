@@ -5,21 +5,18 @@ import CommandNames from 'Commands/CommandNames';
 import { useExecuteCommand } from 'Commands/useCommands';
 import CheckInput from 'Components/Form/CheckInput';
 import HeartRating from 'Components/HeartRating';
-import IconButton from 'Components/Link/IconButton';
 import Link from 'Components/Link/Link';
-import SpinnerIconButton from 'Components/Link/SpinnerIconButton';
-import SeriesTagList from 'Components/SeriesTagList';
 import RelativeDateCell from 'Components/Table/Cells/RelativeDateCell';
 import VirtualTableRowCell from 'Components/Table/Cells/VirtualTableRowCell';
 import VirtualTableSelectCell from 'Components/Table/Cells/VirtualTableSelectCell';
 import Column from 'Components/Table/Column';
 import getReleaseTypeName from 'Episode/getReleaseTypeName';
-import { icons } from 'Helpers/Props';
 import useCountryName from 'Internationalization/useCountryName';
 import DeleteSeriesModal from 'Series/Delete/DeleteSeriesModal';
 import EditSeriesModal from 'Series/Edit/EditSeriesModal';
 import { Statistics } from 'Series/Series';
 import SeriesBanner from 'Series/SeriesBanner';
+import SeriesMovePending from 'Series/SeriesMovePending';
 import { useSeriesTableOptions } from 'Series/seriesOptionsStore';
 import SeriesTitleLink from 'Series/SeriesTitleLink';
 import { SelectStateInputProps } from 'typings/props';
@@ -27,10 +24,12 @@ import formatBytes from 'Utilities/Number/formatBytes';
 import titleCase from 'Utilities/String/titleCase';
 import translate from 'Utilities/String/translate';
 import SeriesIndexProgressBar from '../ProgressBar/SeriesIndexProgressBar';
+import SeriesIndexActions from '../SeriesIndexActions';
 import useSeriesIndexItem from '../useSeriesIndexItem';
 import hasGrowableColumns from './hasGrowableColumns';
 import SeasonsCell from './SeasonsCell';
 import SeriesStatusCell from './SeriesStatusCell';
+import TagsCell from './TagsCell';
 import styles from './SeriesIndexRow.module.css';
 
 interface SeriesIndexRowProps {
@@ -127,6 +126,7 @@ function SeriesIndexRow(props: SeriesIndexRowProps) {
     status,
     path,
     titleSlug,
+    pendingPath,
     previousAiring,
     added,
     statistics = {} as Statistics,
@@ -138,6 +138,9 @@ function SeriesIndexRow(props: SeriesIndexRowProps) {
     certification,
     year,
     useSceneNumbering,
+    language,
+    seasonType,
+    seasonTypes,
     genres = [],
     ratings,
     seasons = [],
@@ -276,7 +279,7 @@ function SeriesIndexRow(props: SeriesIndexRowProps) {
             // @ts-ignore ts(2739)
             <RelativeDateCell
               key={name}
-              className={classNames(styles[name], styles.nextAiringMono)}
+              className={styles[name]}
               date={nextAiring}
               component={VirtualTableRowCell}
             />
@@ -416,6 +419,13 @@ function SeriesIndexRow(props: SeriesIndexRowProps) {
           return (
             <VirtualTableRowCell key={name} className={styles[name]}>
               {path}
+
+              {pendingPath ? (
+                <SeriesMovePending
+                  className={styles.movePendingIcon}
+                  pendingPath={pendingPath}
+                />
+              ) : null}
             </VirtualTableRowCell>
           );
         }
@@ -430,7 +440,7 @@ function SeriesIndexRow(props: SeriesIndexRowProps) {
 
         if (name === 'averageSizePerEpisode') {
           const averageSize =
-            totalEpisodeCount > 0 ? sizeOnDisk / totalEpisodeCount : 0;
+            episodeFileCount > 0 ? sizeOnDisk / episodeFileCount : 0;
 
           return (
             <VirtualTableRowCell key={name} className={styles[name]}>
@@ -518,11 +528,7 @@ function SeriesIndexRow(props: SeriesIndexRowProps) {
         }
 
         if (name === 'tags') {
-          return (
-            <VirtualTableRowCell key={name} className={styles[name]}>
-              <SeriesTagList tags={tags} />
-            </VirtualTableRowCell>
-          );
+          return <TagsCell key={name} className={styles[name]} tags={tags} />;
         }
 
         if (name === 'useSceneNumbering') {
@@ -549,30 +555,34 @@ function SeriesIndexRow(props: SeriesIndexRowProps) {
           );
         }
 
+        if (name === 'language') {
+          return (
+            <VirtualTableRowCell key={name} className={styles[name]}>
+              {language.name}
+            </VirtualTableRowCell>
+          );
+        }
+
+        if (name === 'seasonType') {
+          return (
+            <VirtualTableRowCell key={name} className={styles[name]}>
+              {seasonTypes.find((s) => s.type === seasonType)?.name ??
+                seasonType}
+            </VirtualTableRowCell>
+          );
+        }
+
         if (name === 'actions') {
           return (
             <VirtualTableRowCell key={name} className={styles[name]}>
-              <SpinnerIconButton
-                name={icons.REFRESH}
-                title={translate('RefreshSeries')}
-                isSpinning={isRefreshingSeries}
-                onPress={onRefreshPress}
-              />
-
-              {showSearchAction ? (
-                <SpinnerIconButton
-                  name={icons.SEARCH}
-                  title={translate('SearchForMonitoredEpisodes')}
-                  isSpinning={isSearchingSeries}
-                  onPress={onSearchPress}
-                />
-              ) : null}
-
-              <IconButton
-                name={icons.EDIT}
-                title={translate('EditSeries')}
-                aria-label={translate('EditSeries')}
-                onPress={onEditSeriesPress}
+              <SeriesIndexActions
+                title={title}
+                showSearchAction={showSearchAction}
+                isRefreshingSeries={isRefreshingSeries}
+                isSearchingSeries={isSearchingSeries}
+                onRefreshPress={onRefreshPress}
+                onSearchPress={onSearchPress}
+                onEditSeriesPress={onEditSeriesPress}
               />
             </VirtualTableRowCell>
           );

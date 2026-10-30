@@ -13,9 +13,12 @@ import ModalBody from 'Components/Modal/ModalBody';
 import ModalContent from 'Components/Modal/ModalContent';
 import ModalFooter from 'Components/Modal/ModalFooter';
 import ModalHeader from 'Components/Modal/ModalHeader';
+import PendingChangesModal from 'Components/Modal/PendingChangesModal';
 import Popover from 'Components/Tooltip/Popover';
+import useModalCloseGuard from 'Helpers/Hooks/useModalCloseGuard';
 import { usePendingChangesStore } from 'Helpers/Hooks/usePendingChangesStore';
 import usePrevious from 'Helpers/Hooks/usePrevious';
+import useUnsavedChanges from 'Helpers/Hooks/useUnsavedChanges';
 import {
   icons,
   inputTypes,
@@ -24,7 +27,8 @@ import {
   tooltipPositions,
 } from 'Helpers/Props';
 import MoveSeriesModal from 'Series/MoveSeries/MoveSeriesModal';
-import Series from 'Series/Series';
+import Series, { Statistics } from 'Series/Series';
+import SeriesMovePending from 'Series/SeriesMovePending';
 import { useSaveSeries, useSingleSeries } from 'Series/useSeries';
 import { InputChanged } from 'typings/inputs';
 import selectSettings from 'Utilities/selectSettings';
@@ -53,14 +57,26 @@ function EditSeriesModalContent({
     seasonFolder,
     qualityProfileId,
     seriesType,
+    seasonType,
+    seasonTypes,
+    language,
     path,
+    pendingPath,
     tags,
     rootFolderPath: initialRootFolderPath,
+    statistics = {} as Statistics,
   } = series;
 
-  const { pendingChanges, setPendingChange } = usePendingChangesStore<Series>(
-    {}
-  );
+  const { episodeFileCount = 0 } = statistics;
+
+  const { pendingChanges, setPendingChange, hasPendingChanges } =
+    usePendingChangesStore<Series>({}, series);
+  const { onClose, pendingChangesModalProps } = useUnsavedChanges({
+    hasUnsavedChanges: hasPendingChanges,
+    onDiscard: onModalClose,
+  });
+
+  useModalCloseGuard(onClose);
 
   const [isRootFolderModalOpen, setIsRootFolderModalOpen] = useState(false);
   const [rootFolderPath, setRootFolderPath] = useState(initialRootFolderPath);
@@ -69,7 +85,7 @@ function EditSeriesModalContent({
   );
   const [isConfirmMoveModalOpen, setIsConfirmMoveModalOpen] = useState(false);
 
-  const { saveSeries, isSaving, saveError } = useSaveSeries(isPathChanging);
+  const { saveSeries, isSaving, saveError } = useSaveSeries();
   const wasSaving = usePrevious(isSaving);
 
   const { settings, ...otherSettings } = useMemo(() => {
@@ -80,6 +96,8 @@ function EditSeriesModalContent({
         seasonFolder,
         qualityProfileId,
         seriesType,
+        seasonType,
+        language,
         path,
         tags,
       },
@@ -92,6 +110,8 @@ function EditSeriesModalContent({
     seasonFolder,
     qualityProfileId,
     seriesType,
+    seasonType,
+    language,
     path,
     tags,
     pendingChanges,
@@ -152,10 +172,13 @@ function EditSeriesModalContent({
   const handleMoveSeriesPress = useCallback(() => {
     setIsConfirmMoveModalOpen(false);
 
-    saveSeries({
-      ...series,
-      ...pendingChanges,
-    });
+    saveSeries(
+      {
+        ...series,
+        ...pendingChanges,
+      },
+      true
+    );
   }, [series, pendingChanges, saveSeries]);
 
   useEffect(() => {
@@ -165,7 +188,7 @@ function EditSeriesModalContent({
   }, [isSaving, wasSaving, saveError, onModalClose]);
 
   return (
-    <ModalContent onModalClose={onModalClose}>
+    <ModalContent onModalClose={onClose}>
       <ModalHeader>{translate('EditSeriesModalHeader', { title })}</ModalHeader>
 
       <ModalBody>
@@ -238,7 +261,52 @@ function EditSeriesModalContent({
           </FormRow>
 
           <FormRow size={sizes.MEDIUM}>
-            <FormLabel>{translate('Path')}</FormLabel>
+            <FormLabel>{translate('Language')}</FormLabel>
+
+            <FormInputHelpText text={translate('SeriesLanguageHelpText')} />
+            <FormInput
+              type={inputTypes.LANGUAGE_SELECT}
+              name="language"
+              {...settings.language}
+              onChange={handleInputChange}
+            />
+          </FormRow>
+
+          <FormRow size={sizes.MEDIUM}>
+            <FormLabel>{translate('SeasonType')}</FormLabel>
+
+            <FormInputHelpText text={translate('SeasonTypeHelpText')} />
+            <FormInputHelpText
+              text={
+                !seasonTypes.length || episodeFileCount > 0
+                  ? translate('SeasonTypeHelpTextWarning')
+                  : undefined
+              }
+              isWarning={true}
+            />
+            <FormInput
+              type={inputTypes.SEASON_TYPE_SELECT}
+              name="seasonType"
+              {...settings.seasonType}
+              seasonTypes={seasonTypes}
+              isDisabled={!seasonTypes.length || episodeFileCount > 0}
+              includeNoChange={false}
+              includeMixed={false}
+              onChange={handleInputChange}
+            />
+          </FormRow>
+
+          <FormRow size={sizes.MEDIUM}>
+            <FormLabel>
+              {translate('Path')}
+
+              {pendingPath ? (
+                <SeriesMovePending
+                  className={styles.labelIcon}
+                  pendingPath={pendingPath}
+                />
+              ) : null}
+            </FormLabel>
 
             <FormInput
               type={inputTypes.PATH}
@@ -295,6 +363,7 @@ function EditSeriesModalContent({
       <RootFolderModal
         isOpen={isRootFolderModalOpen}
         seriesId={seriesId}
+        languageId={settings.language.value.id}
         rootFolderPath={rootFolderPath}
         onSavePress={handleRootFolderChange}
         onModalClose={handleRootFolderModalClose}
@@ -308,6 +377,8 @@ function EditSeriesModalContent({
         onSavePress={handleSavePress}
         onMoveSeriesPress={handleMoveSeriesPress}
       />
+
+      <PendingChangesModal {...pendingChangesModalProps} />
     </ModalContent>
   );
 }

@@ -2,15 +2,13 @@ import classNames from 'classnames';
 import React, { useCallback, useState } from 'react';
 import CommandNames from 'Commands/CommandNames';
 import { useExecuteCommand } from 'Commands/useCommands';
-import IconButton from 'Components/Link/IconButton';
 import Link from 'Components/Link/Link';
-import SpinnerIconButton from 'Components/Link/SpinnerIconButton';
-import SeriesTagList from 'Components/SeriesTagList';
-import { icons } from 'Helpers/Props';
 import DeleteSeriesModal from 'Series/Delete/DeleteSeriesModal';
 import EditSeriesModal from 'Series/Edit/EditSeriesModal';
 import SeriesIndexProgressBar from 'Series/Index/ProgressBar/SeriesIndexProgressBar';
 import SeriesIndexPosterSelect from 'Series/Index/Select/SeriesIndexPosterSelect';
+import SeriesIndexActions from 'Series/Index/SeriesIndexActions';
+import SeriesIndexTags from 'Series/Index/SeriesIndexTags';
 import { SeriesStatus, Statistics } from 'Series/Series';
 import {
   ShowStatusMode,
@@ -33,30 +31,20 @@ interface SeriesIndexPosterProps {
   posterHeight: number;
 }
 
-function getStatusBadge(status: SeriesStatus, showStatus: ShowStatusMode) {
-  if (showStatus === 'none') {
-    return null;
-  }
-
-  if (status === 'deleted') {
+function getStatusBadge(status: SeriesStatus, showStatuses: ShowStatusMode[]) {
+  if (status === 'deleted' && showStatuses.includes('deleted')) {
     return { label: translate('Deleted'), statusClass: styles.deleted };
   }
 
-  if (
-    status === 'continuing' &&
-    (showStatus === 'active' || showStatus === 'all')
-  ) {
+  if (status === 'continuing' && showStatuses.includes('continuing')) {
     return { label: translate('Continuing'), statusClass: styles.continuing };
   }
 
-  if (
-    status === 'upcoming' &&
-    (showStatus === 'active' || showStatus === 'all')
-  ) {
+  if (status === 'upcoming' && showStatuses.includes('upcoming')) {
     return { label: translate('Upcoming'), statusClass: styles.upcoming };
   }
 
-  if (status === 'ended' && showStatus === 'all') {
+  if (status === 'ended' && showStatuses.includes('ended')) {
     return { label: translate('Ended'), statusClass: styles.ended };
   }
 
@@ -76,7 +64,7 @@ function SeriesIndexPoster(props: SeriesIndexPosterProps) {
     showQualityProfile,
     showTags,
     showSearchAction,
-    showStatus,
+    showStatuses,
   } = useSeriesPosterOptions();
 
   const { showRelativeDates, shortDateFormat, longDateFormat, timeFormat } =
@@ -163,7 +151,7 @@ function SeriesIndexPoster(props: SeriesIndexPosterProps) {
     height: `${posterHeight}px`,
   };
 
-  const statusBadge = getStatusBadge(status, showStatus);
+  const statusBadge = getStatusBadge(status, showStatuses);
 
   const monitoredLabel = monitored
     ? translate('Monitored')
@@ -177,33 +165,16 @@ function SeriesIndexPoster(props: SeriesIndexPosterProps) {
         ) : null}
 
         <div className={styles.controls}>
-          <SpinnerIconButton
+          <SeriesIndexActions
+            title={title}
             className={styles.action}
-            name={icons.REFRESH}
-            title={translate('RefreshSeries')}
-            isSpinning={isRefreshingSeries}
+            showSearchAction={showSearchAction}
+            isRefreshingSeries={isRefreshingSeries}
+            isSearchingSeries={isSearchingSeries}
             tabIndex={-1}
-            onPress={onRefreshPress}
-          />
-
-          {showSearchAction ? (
-            <SpinnerIconButton
-              className={styles.action}
-              name={icons.SEARCH}
-              title={translate('SearchForMonitoredEpisodes')}
-              isSpinning={isSearchingSeries}
-              tabIndex={-1}
-              onPress={onSearchPress}
-            />
-          ) : null}
-
-          <IconButton
-            className={styles.action}
-            name={icons.EDIT}
-            title={translate('EditSeries')}
-            aria-label={translate('EditSeries')}
-            tabIndex={-1}
-            onPress={onEditSeriesPress}
+            onRefreshPress={onRefreshPress}
+            onSearchPress={onSearchPress}
+            onEditSeriesPress={onEditSeriesPress}
           />
         </div>
 
@@ -286,9 +257,7 @@ function SeriesIndexPoster(props: SeriesIndexPosterProps) {
 
       {showTags && tags.length ? (
         <div className={styles.tags}>
-          <div className={styles.tagsList}>
-            <SeriesTagList tags={tags} />
-          </div>
+          <SeriesIndexTags tags={tags} />
         </div>
       ) : null}
 

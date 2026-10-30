@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useRef } from 'react';
 import CommandNames from 'Commands/CommandNames';
 import { useCommandExecuting } from 'Commands/useCommands';
 import Alert from 'Components/Alert';
@@ -27,6 +27,8 @@ function Calendar() {
 
   const { isFetching, isLoading, error, refetch } = useCalendar();
   const view = useCalendarOption('view');
+  const contentRef = useRef<HTMLDivElement>(null);
+  const stickyRef = useRef<HTMLDivElement>(null);
 
   const isRefreshingSeries = useCommandExecuting(CommandNames.RefreshSeries);
 
@@ -76,6 +78,28 @@ function Calendar() {
     handleScheduleUpdate();
   }, [handleScheduleUpdate]);
 
+  useLayoutEffect(() => {
+    const content = contentRef.current;
+    const sticky = stickyRef.current;
+
+    if (!content || !sticky) {
+      return;
+    }
+
+    const updateHeight = () =>
+      content.style.setProperty(
+        '--calendarStickyHeight',
+        `${sticky.offsetHeight}px`
+      );
+
+    updateHeight();
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(sticky);
+
+    return () => observer.disconnect();
+  }, [isLoading, error, view]);
+
   useEffect(() => {
     if (wasRefreshingSeries && !isRefreshingSeries) {
       refetch();
@@ -88,17 +112,20 @@ function Calendar() {
       {!isFetching && error ? (
         <Alert kind={kinds.DANGER}>{translate('CalendarLoadError')}</Alert>
       ) : null}
-      {!error && !isLoading && view === 'agenda' ? (
-        <div className={styles.calendarContent}>
-          <CalendarHeader />
-          <Agenda />
-        </div>
-      ) : null}
-      {!error && !isLoading && view !== 'agenda' ? (
-        <div className={styles.calendarContent}>
-          <CalendarHeader />
-          <DaysOfWeek />
-          <CalendarDays />
+      {!error && !isLoading ? (
+        <div
+          ref={view === 'agenda' ? undefined : contentRef}
+          className={styles.calendarContent}
+        >
+          <div
+            ref={view === 'agenda' ? undefined : stickyRef}
+            className={styles.sticky}
+          >
+            <CalendarHeader />
+            {view === 'agenda' ? null : <DaysOfWeek />}
+          </div>
+
+          {view === 'agenda' ? <Agenda /> : <CalendarDays />}
         </div>
       ) : null}
     </div>

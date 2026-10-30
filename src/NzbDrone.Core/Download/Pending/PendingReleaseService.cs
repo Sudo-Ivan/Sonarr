@@ -283,10 +283,12 @@ namespace NzbDrone.Core.Download.Pending
             var seriesReleases = _repository.AllBySeriesId(targetItem.SeriesId);
 
             var releasesToRemove = seriesReleases.Where(
-                c => c.ParsedEpisodeInfo.SeasonNumber == targetItem.ParsedEpisodeInfo.SeasonNumber &&
+                c => c.ParsedEpisodeInfo.SeasonNumbers.SequenceEqual(targetItem.ParsedEpisodeInfo.SeasonNumbers) &&
                      c.ParsedEpisodeInfo.EpisodeNumbers.SequenceEqual(targetItem.ParsedEpisodeInfo.EpisodeNumbers));
 
             _repository.DeleteMany(releasesToRemove.Select(c => c.Id));
+
+            UpdatePendingReleases();
         }
 
         public void RemovePendingQueueItemsObsolete(int queueId)
@@ -295,10 +297,12 @@ namespace NzbDrone.Core.Download.Pending
             var seriesReleases = _repository.AllBySeriesId(targetItem.SeriesId);
 
             var releasesToRemove = seriesReleases.Where(
-                c => c.ParsedEpisodeInfo.SeasonNumber == targetItem.ParsedEpisodeInfo.SeasonNumber &&
+                c => c.ParsedEpisodeInfo.SeasonNumbers.SequenceEqual(targetItem.ParsedEpisodeInfo.SeasonNumbers) &&
                      c.ParsedEpisodeInfo.EpisodeNumbers.SequenceEqual(targetItem.ParsedEpisodeInfo.EpisodeNumbers));
 
             _repository.DeleteMany(releasesToRemove.Select(c => c.Id));
+
+            UpdatePendingReleases();
         }
 
         public RemoteEpisode OldestPendingRelease(int seriesId, int[] episodeIds)
@@ -375,7 +379,9 @@ namespace NzbDrone.Core.Download.Pending
                     SeriesMatchType = release.AdditionalInfo?.SeriesMatchType ?? SeriesMatchType.Unknown,
                     ReleaseSource = release.AdditionalInfo?.ReleaseSource ?? ReleaseSourceType.Unknown,
                     ParsedEpisodeInfo = release.ParsedEpisodeInfo,
-                    Release = release.Release
+                    Release = release.Release,
+                    MappedSeasonNumber = release.ParsedEpisodeInfo.SeasonNumbers.Any() ? release.ParsedEpisodeInfo.SeasonNumbers.First() : null,
+                    Episodes = new List<Episode>()
                 };
 
                 if (knownRemoteEpisodes != null && knownRemoteEpisodes.TryGetValue(release.Release.Title, out var knownRemoteEpisode))
@@ -397,15 +403,7 @@ namespace NzbDrone.Core.Download.Pending
                     catch (InvalidOperationException ex)
                     {
                         _logger.Debug(ex, ex.Message);
-
-                        release.RemoteEpisode.MappedSeasonNumber = release.ParsedEpisodeInfo.SeasonNumber;
-                        release.RemoteEpisode.Episodes = new List<Episode>();
                     }
-                }
-                else
-                {
-                    release.RemoteEpisode.MappedSeasonNumber = release.ParsedEpisodeInfo.SeasonNumber;
-                    release.RemoteEpisode.Episodes = new List<Episode>();
                 }
 
                 _aggregationService.Augment(release.RemoteEpisode);
@@ -543,14 +541,11 @@ namespace NzbDrone.Core.Download.Pending
                     ReleaseSource = decision.RemoteEpisode.ReleaseSource
                 }
             });
-
-            _eventAggregator.PublishEvent(new PendingReleasesUpdatedEvent());
         }
 
         private void Delete(PendingRelease pendingRelease)
         {
             _repository.Delete(pendingRelease);
-            _eventAggregator.PublishEvent(new PendingReleasesUpdatedEvent());
         }
 
         private int GetDelay(RemoteEpisode remoteEpisode)
@@ -646,6 +641,8 @@ namespace NzbDrone.Core.Download.Pending
         private void UpdatePendingReleases()
         {
             _pendingReleases = IncludeRemoteEpisodes(_repository.All().ToList());
+
+            _eventAggregator.PublishEvent(new PendingReleasesUpdatedEvent());
         }
 
         public void Handle(SeriesEditedEvent message)

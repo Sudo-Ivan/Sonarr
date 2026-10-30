@@ -58,6 +58,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "rememberMe",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
           }
         ],
         "responses": {
@@ -94,7 +102,7 @@
                     "type": "string"
                   },
                   "rememberMe": {
-                    "type": "string"
+                    "type": "boolean"
                   }
                 }
               },
@@ -135,6 +143,67 @@
         "responses": {
           "200": {
             "description": "OK"
+          }
+        }
+      }
+    },
+    "/reset-password/request": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "responses": {
+          "302": {
+            "description": "Found"
+          }
+        }
+      }
+    },
+    "/reset-password": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  },
+                  "username": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "passwordConfirmation": {
+                    "type": "string"
+                  }
+                }
+              },
+              "encoding": {
+                "token": {
+                  "style": "form"
+                },
+                "username": {
+                  "style": "form"
+                },
+                "password": {
+                  "style": "form"
+                },
+                "passwordConfirmation": {
+                  "style": "form"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "302": {
+            "description": "Found"
           }
         }
       }
@@ -5089,6 +5158,97 @@
         }
       }
     },
+    "/api/v5/settings/metadata": {
+      "get": {
+        "tags": [
+          "MetadataSourceSettings"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataSourceSettingsResource"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v5/settings/metadata/{id}": {
+      "put": {
+        "tags": [
+          "MetadataSourceSettings"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetadataSourceSettingsResource"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataSourceSettingsResource"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "MetadataSourceSettings"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataSourceSettingsResource"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
     "/api/v5/wanted/missing": {
       "get": {
         "tags": [
@@ -5847,42 +6007,24 @@
             }
           },
           {
+            "name": "removalMethod",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/QueueRemovalMethod"
+            }
+          },
+          {
+            "name": "blocklistMethod",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/QueueBlocklistMethod"
+            }
+          },
+          {
             "name": "message",
             "in": "query",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "removeFromClient",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": true
-            }
-          },
-          {
-            "name": "blocklist",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "skipRedownload",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "changeCategory",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
             }
           }
         ],
@@ -5903,42 +6045,24 @@
         ],
         "parameters": [
           {
+            "name": "removalMethod",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/QueueRemovalMethod"
+            }
+          },
+          {
+            "name": "blocklistMethod",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/QueueBlocklistMethod"
+            }
+          },
+          {
             "name": "message",
             "in": "query",
             "schema": {
               "type": "string"
-            }
-          },
-          {
-            "name": "removeFromClient",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": true
-            }
-          },
-          {
-            "name": "blocklist",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "skipRedownload",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
-            }
-          },
-          {
-            "name": "changeCategory",
-            "in": "query",
-            "schema": {
-              "type": "boolean",
-              "default": false
             }
           }
         ],
@@ -7144,6 +7268,14 @@
               "type": "integer",
               "format": "int32"
             }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         ],
         "responses": {
@@ -7205,6 +7337,14 @@
             "in": "query",
             "schema": {
               "type": "string"
+            }
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
             }
           }
         ],
@@ -9469,9 +9609,7 @@
             "type": "string",
             "nullable": true
           },
-          "value": {
-            "nullable": true
-          },
+          "value": {},
           "type": {
             "type": "string",
             "nullable": true
@@ -9818,6 +9956,7 @@
           "oidcDiscoveryFailed",
           "oidcNotConfigured",
           "package",
+          "passwordResetTokenConfigured",
           "proxyBadRequest",
           "proxyFailed",
           "proxyResolveIp",
@@ -10038,6 +10177,12 @@
             "type": "integer",
             "format": "int32",
             "nullable": true
+          },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "tagExisting": {
+            "$ref": "#/components/schemas/TagExistingType"
           }
         },
         "additionalProperties": false
@@ -10186,6 +10331,9 @@
           "seriesType": {
             "$ref": "#/components/schemas/SeriesTypes"
           },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
           "seasonFolder": {
             "type": "boolean"
           },
@@ -10201,7 +10349,7 @@
             "format": "date-span"
           },
           "tagExisting": {
-            "type": "boolean"
+            "$ref": "#/components/schemas/TagExistingType"
           }
         },
         "additionalProperties": false
@@ -10864,10 +11012,6 @@
             "type": "string",
             "nullable": true
           },
-          "codecId": {
-            "type": "string",
-            "nullable": true
-          },
           "profile": {
             "type": "string",
             "nullable": true
@@ -10993,7 +11137,8 @@
           },
           "recycleBinCleanupDays": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "nullable": true
           },
           "downloadPropersAndRepacks": {
             "$ref": "#/components/schemas/ProperDownloadTypes"
@@ -11032,7 +11177,8 @@
           },
           "minimumFreeSpaceWhenImporting": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "nullable": true
           },
           "copyUsingHardlinks": {
             "type": "boolean"
@@ -11063,7 +11209,8 @@
           },
           "seasonPackUpgradeThreshold": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -11123,6 +11270,20 @@
           },
           "enable": {
             "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MetadataSourceSettingsResource": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "preferredMetadataLanguage": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -11363,11 +11524,6 @@
             },
             "nullable": true
           },
-          "seasonNumber": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
           "episodeNumbers": {
             "type": "array",
             "items": {
@@ -11487,6 +11643,17 @@
           },
           "fullSeason": {
             "type": "boolean"
+          },
+          "isMultiSeason": {
+            "type": "boolean"
+          },
+          "seasonNumbers": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
           },
           "seasonNumber": {
             "type": "integer",
@@ -11863,6 +12030,14 @@
         },
         "additionalProperties": false
       },
+      "QueueBlocklistMethod": {
+        "enum": [
+          "doNotBlocklist",
+          "blocklistAndSearch",
+          "blocklistOnly"
+        ],
+        "type": "string"
+      },
       "QueueBulkResource": {
         "required": [
           "ids"
@@ -11879,6 +12054,14 @@
           }
         },
         "additionalProperties": false
+      },
+      "QueueRemovalMethod": {
+        "enum": [
+          "removeFromClient",
+          "changeCategory",
+          "ignore"
+        ],
+        "type": "string"
       },
       "QueueResource": {
         "type": "object",
@@ -12340,7 +12523,8 @@
           },
           "airDateGracePeriod": {
             "type": "integer",
-            "format": "int32"
+            "format": "int32",
+            "nullable": true
           },
           "allowSeasonPackWithoutAllEpisodesAired": {
             "type": "boolean"
@@ -12778,6 +12962,10 @@
           "monitored": {
             "type": "boolean"
           },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
           "statistics": {
             "$ref": "#/components/schemas/SeasonStatisticsResource"
           },
@@ -12853,6 +13041,32 @@
         },
         "additionalProperties": false
       },
+      "SeasonTypeResource": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "seasonNumbers": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          },
+          "episodeCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "SelectOption": {
         "type": "object",
         "properties": {
@@ -12898,6 +13112,9 @@
             "format": "int32",
             "nullable": true
           },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
           "seriesType": {
             "$ref": "#/components/schemas/SeriesTypes"
           },
@@ -12933,8 +13150,15 @@
         "additionalProperties": false
       },
       "SeriesFolderResource": {
+        "required": [
+          "folder",
+          "language"
+        ],
         "type": "object",
         "properties": {
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
           "folder": {
             "type": "string",
             "nullable": true
@@ -13004,10 +13228,17 @@
             },
             "nullable": true
           },
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
           "originalLanguage": {
             "$ref": "#/components/schemas/Language"
           },
           "remotePoster": {
+            "type": "string",
+            "nullable": true
+          },
+          "seasonType": {
             "type": "string",
             "nullable": true
           },
@@ -13018,11 +13249,29 @@
             },
             "nullable": true
           },
+          "seasonTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SeasonTypeResource"
+            },
+            "nullable": true
+          },
+          "translations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SeriesTranslationResource"
+            },
+            "nullable": true
+          },
           "year": {
             "type": "integer",
             "format": "int32"
           },
           "path": {
+            "type": "string",
+            "nullable": true
+          },
+          "pendingPath": {
             "type": "string",
             "nullable": true
           },
@@ -13093,7 +13342,15 @@
           "seriesType": {
             "$ref": "#/components/schemas/SeriesTypes"
           },
+          "originalTitle": {
+            "type": "string",
+            "nullable": true
+          },
           "cleanTitle": {
+            "type": "string",
+            "nullable": true
+          },
+          "cleanOriginalTitle": {
             "type": "string",
             "nullable": true
           },
@@ -13111,6 +13368,13 @@
           },
           "folder": {
             "type": "string",
+            "nullable": true
+          },
+          "folders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SeriesFolderResource"
+            },
             "nullable": true
           },
           "certification": {
@@ -13248,6 +13512,23 @@
             "items": {
               "type": "string"
             },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "SeriesTranslationResource": {
+        "type": "object",
+        "properties": {
+          "language": {
+            "$ref": "#/components/schemas/Language"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "overview": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -13635,6 +13916,14 @@
         },
         "additionalProperties": false
       },
+      "TagExistingType": {
+        "enum": [
+          "none",
+          "add",
+          "sync"
+        ],
+        "type": "string"
+      },
       "TagResource": {
         "type": "object",
         "properties": {
@@ -13791,6 +14080,10 @@
           "enableColorImpairedMode": {
             "type": "boolean"
           },
+          "headerColor": {
+            "type": "string",
+            "nullable": true
+          },
           "theme": {
             "type": "string",
             "nullable": true
@@ -13944,12 +14237,8 @@
             "type": "string",
             "nullable": true
           },
-          "attemptedValue": {
-            "nullable": true
-          },
-          "customState": {
-            "nullable": true
-          },
+          "attemptedValue": {},
+          "customState": {},
           "severity": {
             "$ref": "#/components/schemas/Severity"
           },
@@ -13965,9 +14254,7 @@
           },
           "formattedMessagePlaceholderValues": {
             "type": "object",
-            "additionalProperties": {
-              "nullable": true
-            },
+            "additionalProperties": {},
             "nullable": true
           }
         },
@@ -14108,6 +14395,9 @@
     },
     {
       "name": "Metadata"
+    },
+    {
+      "name": "MetadataSourceSettings"
     },
     {
       "name": "Missing"

@@ -124,7 +124,7 @@ function EditSpecificationModalContent({
 
   return (
     <ModalContent onModalClose={onCancelPress}>
-      <ModalHeader>
+      <ModalHeader subtitle={specification.id ? specification.name : undefined}>
         {specification.id
           ? translate('EditConditionImplementation', { implementationName })
           : translate('AddConditionImplementation', { implementationName })}
@@ -176,7 +176,6 @@ function EditSpecificationModalContent({
                 <ProviderFieldFormGroup
                   key={field.name}
                   advancedSettings={advancedSettings}
-                  layout="row"
                   provider="specifications"
                   providerData={item}
                   {...field}

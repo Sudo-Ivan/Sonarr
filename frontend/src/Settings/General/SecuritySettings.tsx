@@ -70,7 +70,7 @@ export const authenticationRequiredOptions: EnhancedSelectInputValue<string>[] =
       },
     },
     {
-      key: 'disabledForLocalHost',
+      key: 'disabledForLocalhost',
       get value() {
         return translate('DisabledForLocalhost');
       },
@@ -216,7 +216,7 @@ function SecuritySettings({
       <FormRow>
         <FormLabel>{translate('ApiKey')}</FormLabel>
         <FormInputHelpText
-          text={translate('RestartRequiredHelpTextWarning')}
+          text={translate('BrowserReloadRequired')}
           isWarning={true}
         />
         <FormInput
@@ -233,6 +233,8 @@ function SecuritySettings({
             <FormInputButton
               key="reset"
               kind={kinds.DANGER}
+              title={translate('ResetAPIKey')}
+              aria-label={translate('ResetAPIKey')}
               onPress={handleResetApiKeyPress}
             >
               <Icon name={icons.REFRESH} isSpinning={isResettingApiKey} />
