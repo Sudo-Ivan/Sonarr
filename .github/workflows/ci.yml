@@ -124,7 +124,7 @@ jobs:
             VERSION=${{ github.ref_name }}
             REVISION=${{ github.sha }}
           tags: ${{ steps.image.outputs.image }}
-          outputs: type=image,name-canonical=true,push-by-digest=true
+          outputs: type=image,name=${{ steps.image.outputs.image }},name-canonical=true,push-by-digest=true,push=true
 
       - name: Export digest
         env:
